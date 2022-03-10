@@ -1,0 +1,45 @@
+---
+title: "Distributions_check"
+output: html_document
+---
+```{r}
+library(bigsnpr)
+library(dplyr)
+```
+
+
+```{r}
+G3 = snp_attach("test_fbm.rds")
+```
+
+```{r}
+# Get information
+G = G3$genotypes
+MAF = G3$map$MAF
+l = G3$fam$l
+l_g = G3$fam$l_g
+y = G3$fam$y
+```
+
+```{r}
+# Check if mean of G is correct
+G_mean = colMeans(G[,])
+MAF_mean = MAF*2
+
+all.equal.numeric(G_mean, MAF_mean, tolerance= .Machine$double.eps ^ 0.5, scale=NULL)
+G_mean[1:10]
+MAF_mean[1:10]
+
+```
+```{r}
+# Check distribution of liability (standard normal)
+qqnorm(l)
+mean(l)
+var(l)
+```
+```{r}
+# Check sum of y (expect K)
+mean(y)
+```
+
+
