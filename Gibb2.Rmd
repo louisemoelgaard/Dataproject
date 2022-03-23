@@ -8,6 +8,8 @@ output: html_document
 ```{r}
 h_sq = 0.5
 
+
+# Orginal matrix
 covmat = c(1-h_sq, 0,        0,        0,
            0,      h_sq,     1/2*h_sq, 1/2*h_sq,
            0,      1/2*h_sq, 1,        0,
@@ -16,7 +18,7 @@ covmat = c(1-h_sq, 0,        0,        0,
 
 covmat = matrix(covmat, ncol=4, nrow=4)
 
-
+# Fire transformationer, således at liability'en vi er interesseret i står øverst i vektoren.
 mult_mat_l_g = c(0,1,0,0,
                  1,1,0,0,
                  0,0,1,0,
@@ -52,6 +54,7 @@ mult_mat = list('l_g'=matrix(mult_mat_l_g, ncol=4, nrow=4),
 
 
 ```{r}
+# funktion som udregner konstanter til betinget fordeling
 calc_distribution = function(sigma){
   n = nrow(sigma)
   sigma_bar = sigma[1,1] - sigma[1 , 2:n] %*% solve(sigma[2:n , 2:n]) %*% sigma[2:n , 1]
@@ -64,14 +67,19 @@ calc_distribution = function(sigma){
 
 
 ```{r}
+
 k = nrow(covmat)
 const_list = list(rep(0, k))
 i=0
 
+# Udregn konstanter til betinget fordeling for l_g, l, l_p1, l_p2
 for (mat in mult_mat){
   i= i+1
+  # Udregn transformation for covarians matricen
   alg = mat %*% covmat %*% t(mat)
+  # Udregn konstanter
   const = calc_distribution(alg)
+  # Gem dem
   const_list[[i]] = const
   
 }
@@ -86,23 +94,29 @@ M = 1e5
 
 
 ```{r}
-liabil = c(0,0,0,0)
+# Vores gibb sampler
+
+liabil = c(0,0,0,0) # i formen c(l_g, l, l_p1, l_p2)
 mu_vec = rep(0, N)
 
 for (i in 1:N) {
   for (j in 1:k) {
     
+    # Udregner parametre
     sigma = const_list[[j]][[1]]
     mu_mult = const_list[[j]][[2]]
-    mu = mu_mult %*% liabil[-j]
+    mu = mu_mult %*% liabil[-j] # Udelukker den liability vi er kommet til
     
-    if (j != 1){
-      q = runif(1, 0.95, 1)
-      liabil[j] = qnorm(q, mu, sigma)
-    }
-    else{
+    
+    # Hvis liability er l_g variere den frit
+    if (j = 1){
       liabil[j] = rnorm(1, mu, sigma)
       mu_vec[i] = mu
+    }
+    else{
+      # Ellers benytter vi truncation
+      q = runif(1, 0.95, 1)
+      liabil[j] = qnorm(q, mu, sigma)
     }
     
 
