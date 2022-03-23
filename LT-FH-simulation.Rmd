@@ -55,9 +55,9 @@ for(i in 1:iterations){
   
   G[current_start:current_end,] = round((G1 + G2)/2 - k)
   
-  l_g1[current_start:current_end] = c(sweep(sweep(G1[1:block_size,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
+  l_g1[current_start:current_end] = c(sweep(sweep(G1[,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
                                            STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
-  l_g2[current_start:current_end] = c(sweep(sweep(G2[1:block_size,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
+  l_g2[current_start:current_end] = c(sweep(sweep(G2[,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
                                            STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
   
   current_start = current_start + block_size }
