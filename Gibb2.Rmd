@@ -29,10 +29,6 @@ mult_mat_l = c(1,1,0,0,
                0,0,1,0,
                0,0,0,1)
 
-mult_mat_l = c(1,0,0,0,
-               0,1,0,0,
-               0,0,1,0,
-               0,0,0,1)
 
 mult_mat_l_p1 = c(0,0,1,0,
                   0,1,0,0,
@@ -46,9 +42,9 @@ mult_mat_l_p2 = c(0,0,0,1,
 
 names = list('l_g', 'l', 'l_p1', 'l_p2')
 mult_mat = list('l_g'=matrix(mult_mat_l_g, ncol=4, nrow=4), 
-                'l'=matrix(mult_mat_l, ncol=4, nrow=4), 
-                'l_p1'=matrix(mult_mat_l_p1, ncol=4, nrow=4),
-                'l_p2'=matrix(mult_mat_l_p2, ncol=4, nrow=4))
+                'l'=matrix(mult_mat_l, ncol=4, nrow=4, byrow = T), 
+                'l_p1'=matrix(mult_mat_l_p1, ncol=4, nrow=4, byrow = T),
+                'l_p2'=matrix(mult_mat_l_p2, ncol=4, nrow=4, byrow = T))
 
 ```
 
@@ -61,6 +57,19 @@ calc_distribution = function(sigma){
   mu_mult_bar = sigma[1 , 2:n] %*% solve(sigma[2:n , 2:n])
   return(list('sigma'=sigma_bar, 'mu_mult'=mu_mult_bar))
   }
+```
+
+
+```{r}
+mult_mat[[1]] %*% covmat %*% mult_mat[[1]]
+```
+
+
+```{r}
+mult_mat[[2]] %*% covmat %*% t(mult_mat[[2]])
+```
+```{r}
+mult_mat[[3]] %*% covmat %*% t(mult_mat[[2]])
 ```
 
 
@@ -88,12 +97,18 @@ for (mat in mult_mat){
 
 
 ```{r}
+const_list
+```
+
+
+```{r}
 N = 3000
 M = 1e5
 ```
 
 
 ```{r}
+set.seed(42)
 # Vores gibb sampler
 
 liabil = c(0,0,0,0) # i formen c(l_g, l, l_p1, l_p2)
@@ -109,14 +124,14 @@ for (i in 1:N) {
     
     
     # Hvis liability er l_g variere den frit
-    if (j = 1){
-      liabil[j] = rnorm(1, mu, sigma)
+    if (j == 1){
+      liabil[j] = rnorm(1, mu, sqrt(sigma))
       mu_vec[i] = mu
     }
     else{
       # Ellers benytter vi truncation
       q = runif(1, 0.95, 1)
-      liabil[j] = qnorm(q, mu, sigma)
+      liabil[j] = qnorm(q, mu, sqrt(sigma))
     }
     
 
@@ -132,3 +147,8 @@ liabil
 ```{r}
 plot(mu_vec, type='l')
 ```
+```{r}
+x = seq(from = -3, to = 3, by = 0.01)
+plot(x, dnorm(x, 0, 0.5),  type="l")
+```
+
