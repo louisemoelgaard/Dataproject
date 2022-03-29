@@ -49,9 +49,9 @@ for(i in 1:iterations){
   current_end = current_start + block_size - 1
   probs = MAF[current_start:current_end]
   
-  G1 = matrix(rbinom(block_size*N, 2, MAF), ncol=M, nrow=block_size)
-  G2 = matrix(rbinom(block_size*N, 2, MAF), ncol=M, nrow=block_size)
-  k = matrix(rnorm(block_size*M, 0, 0.0000001), ncol=M, nrow=block_size)
+  G1 = matrix(rbinom(block_size*N, 2, MAF), ncol=M, nrow=block_size, byrow = TRUE)
+  G2 = matrix(rbinom(block_size*N, 2, MAF), ncol=M, nrow=block_size, byrow = TRUE)
+  k = matrix(rnorm(block_size*M, 0, 0.0000001), ncol=M, nrow=block_size, byrow = TRUE)
   
   G[current_start:current_end,] = round((G1 + G2)/2 - k)
   
