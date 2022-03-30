@@ -52,29 +52,29 @@ bounds <- function(phenos,N, T_ = 0.05){
 
 Gibb <- function(covmat, phenos, N, T_ = 0.05){
 
-bounds = bounds(phenos, N, T_) 
+  bounds = bounds(phenos, N, T_) 
 
   
-k = nrow(covmat)
+  k = nrow(covmat)
 
-const_list = calc_distribution(covmat)
+  const_list = calc_distribution(covmat)
+  
+  liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
+  mu_vec = matrix(0, nrow = N-1, ncol = k)
 
-liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
-mu_vec = matrix(0, nrow = N-1, ncol = k)
 
-
-for (i in 1:(N-1)) {
-  for (j in 1:k) {
-    # Udregner parametre
-    sigma = const_list[[j]]$sigma
-    mu_mult = const_list[[j]]$mu_mult
-    mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
-    mu_vec[i,j] = mu
-    liabil[i,j] = qnorm(bounds[i,j], mu, sqrt(sigma))
+  for (i in 1:(N-1)) {
+    for (j in 1:k) {
+      # Udregner parametre
+      sigma = const_list[[j]]$sigma
+      mu_mult = const_list[[j]]$mu_mult
+      mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
+      mu_vec[i,j] = mu
+      liabil[i,j] = qnorm(bounds[i,j], mu, sqrt(sigma))
+    }
+    liabil[i+1,] = liabil[i,]
   }
-  liabil[i+1,] = liabil[i,]
-}
-return(list(liabil, mu_vec))
+  return(list('liabilities'=liabil, 'mu'=mu_vec))
 }
 ```
 
@@ -87,19 +87,19 @@ test = Gibb(covmat, c(1,1,1) , 3000)
 
 ```{r}
 par(mfrow=c(2,2))
-plot(test[[1]][,1], type='l')
-plot(test[[1]][,2], type='l')
-plot(test[[1]][,3], type='l')
-plot(test[[1]][,4], type='l')
+plot(test$liabilities[,1], type='l')
+plot(test$liabilities[,2], type='l')
+plot(test$liabilities[,3], type='l')
+plot(test$liabilities[,4], type='l')
 ```
 
 
 ```{r}
 par(mfrow=c(2,2))
-plot(test[[2]][,1], type='l')
-plot(test[[2]][,2], type='l')
-plot(test[[2]][,3], type='l')
-plot(test[[2]][,4], type='l')
+plot(test$mu[,1], type='l')
+plot(test$mu[,2], type='l')
+plot(test$mu[,3], type='l')
+plot(test$mu[,4], type='l')
 ```
 
 
@@ -137,7 +137,4 @@ return(list(liabil, mu_vec))
 test2 = Gibb_notrunc(get_cov(0.5), 3000)
 ```
 
-```{r}
-cov(test2[[1]])
-```
 
