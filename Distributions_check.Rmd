@@ -9,17 +9,25 @@ library(dplyr)
 
 
 ```{r}
-G3 = snp_attach("test_fbm.rds")
+G3 = snp_attach("LTFH.rds")
 ```
 
 ```{r}
 # Get information
 G = G3$genotypes
 MAF = G3$map$MAF
-l = G3$fam$l
+#l = G3$fam$l
+#l_g = G3$fam$l_g
+#y = G3$fam$y
+
 l_g = G3$fam$l_g
-y = G3$fam$y
+l_e = G3$fam$l_e
+l_g1 = G3$fam$l_g1
+l_e1 = G3$fam$l_e1
+l_g2 = G3$fam$l_g2
+l_e2 = G3$fam$l_e2
 ```
+
 
 ```{r}
 # Check if mean of G is correct
@@ -31,12 +39,24 @@ G_mean[1:10]
 MAF_mean[1:10]
 
 ```
+
 ```{r}
 # Check distribution of liability (standard normal)
+l = l_g + l_e 
 qqnorm(l)
 mean(l)
 var(l)
 ```
+
+```{r}
+# Check distribution of liability (standard normal)
+l1 = l_g1 + l_e1 
+qqnorm(l1)
+mean(l1)
+var(l1)
+```
+
+
 ```{r}
 # Check sum of y (expect K)
 mean(y)
