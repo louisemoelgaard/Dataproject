@@ -26,31 +26,41 @@ calc_distribution = function(sigma){
   }
 ```
 
-```{r}
-s = get_cov(0.5)
-print(s)
-calc_distribution(s)
-```
 
+```{r}
+bounds <- function(phenos,N, T_ = 0.05){
+  interval_2 = c(0, 1-T_)
+  interval_1 = c(1-T_, 1)
+  k = length(phenos)+1
+  out = matrix(c(0,1), ncol=2, nrow=k, byrow=T)
+  i = 2
+  for (phen in phenos){
+    interval = phen * interval_1 + (1-phen)*interval_2
+    out[i,] = interval
+    i = i+1
+  }
+  q = matrix(runif(N*k, out[,1], out[,2]), ncol=k, byrow=T)
+  return(q)
+}
+ 
+```
 
 
 ```{r}
 # Vores gibb sampler
 
-set.seed(42)
 
-covmat = get_cov(0.5)
+Gibb <- function(covmat, phenos, N, T_ = 0.05){
 
-N = 3000
-M = 1e5
+bounds = bounds(phenos, N, T_) 
 
+  
 k = nrow(covmat)
 
 const_list = calc_distribution(covmat)
 
 liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
-mu_vec = rep(0, N)
-
+mu_vec = matrix(0, nrow = N-1, ncol = k)
 
 
 for (i in 1:(N-1)) {
@@ -59,36 +69,75 @@ for (i in 1:(N-1)) {
     sigma = const_list[[j]]$sigma
     mu_mult = const_list[[j]]$mu_mult
     mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
-    #print(liabil)
-    liabil[i,j] = rnorm(1, mean = mu, sd = sqrt(sigma))
-    
-    
-    # Hvis liability er l_g variere den frit
-    #if (j == 1){
-      
-     # mu_vec[i] = mu
-    #}
-    #else{
-      # Ellers benytter vi truncation
-     # q = runif(1, 0.95, 1)
-      #liabil[j] = qnorm(q, mu, sqrt(sigma))
-    #}
-    
-  #print(liabil_star[-j])
+    mu_vec[i,j] = mu
+    liabil[i,j] = qnorm(bounds[i,j], mu, sqrt(sigma))
   }
   liabil[i+1,] = liabil[i,]
 }
-
-```
-```{r}
-liabil[1,]
+return(list(liabil, mu_vec))
+}
 ```
 
 
 ```{r}
-plot(liabil[,1], type='l')
+covmat = get_cov(0.5)
+test = Gibb(covmat, c(1,1,1) , 3000)
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(test[[1]][,1], type='l')
+plot(test[[1]][,2], type='l')
+plot(test[[1]][,3], type='l')
+plot(test[[1]][,4], type='l')
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(test[[2]][,1], type='l')
+plot(test[[2]][,2], type='l')
+plot(test[[2]][,3], type='l')
+plot(test[[2]][,4], type='l')
+```
+
+
+
+```{r}
+cov(test[[1]])
 ```
 ```{r}
-cov(liabil)
+Gibb_notrunc <- function(covmat, N, T_ = 0.05){
+
+k = nrow(covmat)
+
+const_list = calc_distribution(covmat)
+
+liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
+mu_vec = matrix(0, nrow = N-1, ncol = k)
+
+
+for (i in 1:(N-1)) {
+  for (j in 1:k) {
+    # Udregner parametre
+    sigma = const_list[[j]]$sigma
+    mu_mult = const_list[[j]]$mu_mult
+    mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
+    mu_vec[i,j] = mu
+    liabil[i,j] = rnorm(1, mu, sqrt(sigma))
+  }
+  liabil[i+1,] = liabil[i,]
+}
+return(list(liabil, mu_vec))
+}
+```
+
+```{r}
+test2 = Gibb_notrunc(get_cov(0.5), 3000)
+```
+
+```{r}
+cov(test2[[1]])
 ```
 
