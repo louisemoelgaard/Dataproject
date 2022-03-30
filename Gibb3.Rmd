@@ -26,6 +26,11 @@ calc_distribution = function(sigma){
   }
 ```
 
+```{r}
+s = get_cov(0.5)
+print(s)
+calc_distribution(s)
+```
 
 
 
@@ -43,38 +48,47 @@ k = nrow(covmat)
 
 const_list = calc_distribution(covmat)
 
-liabil = c(0,0,0,0) # i formen c(l_g, l, l_p1, l_p2)
+liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
 mu_vec = rep(0, N)
 
-for (i in 1:N) {
+
+
+for (i in 1:(N-1)) {
   for (j in 1:k) {
-    
     # Udregner parametre
-    sigma = const_list[[j]][[1]]
-    mu_mult = const_list[[j]][[2]]
-    mu = mu_mult %*% liabil[-j] # Udelukker den liability vi er kommet til
+    sigma = const_list[[j]]$sigma
+    mu_mult = const_list[[j]]$mu_mult
+    mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
+    #print(liabil)
+    liabil[i,j] = rnorm(1, mean = mu, sd = sqrt(sigma))
     
     
     # Hvis liability er l_g variere den frit
-    if (j == 1){
-      liabil[j] = rnorm(1, mu, sqrt(sigma))
-      mu_vec[i] = mu
-    }
-    else{
+    #if (j == 1){
+      
+     # mu_vec[i] = mu
+    #}
+    #else{
       # Ellers benytter vi truncation
-      q = runif(1, 0.95, 1)
-      liabil[j] = qnorm(q, mu, sqrt(sigma))
-    }
+     # q = runif(1, 0.95, 1)
+      #liabil[j] = qnorm(q, mu, sqrt(sigma))
+    #}
     
-
+  #print(liabil_star[-j])
   }
+  liabil[i+1,] = liabil[i,]
 }
+
+```
+```{r}
+liabil[1,]
 ```
 
+
 ```{r}
-plot(mu_vec, type='l')
+plot(liabil[,1], type='l')
 ```
 ```{r}
-const_list
+cov(liabil)
 ```
 
