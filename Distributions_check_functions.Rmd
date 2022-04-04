@@ -1,0 +1,74 @@
+---
+title: "Distributions_check_functions"
+output: html_document
+---
+```{r}
+library(bigsnpr)
+library(dplyr)
+```
+
+
+```{r}
+G1 = snp_attach("test_sim2.rds")
+G2 = snp_attach("test_fbm.rds")
+G3 = snp_attach("test_parent_2.rds")
+```
+
+```{r}
+Simple_test = function(info){
+  # Get information
+  G = info$genotypes
+  MAF = info$map$MAF
+  l_g = info$fam$l_g
+  l_e = info$fam$l_e
+  y = info$fam$y
+  
+  l = l_g + l_e 
+  qqnorm(l)
+  print(c('mean l'=mean(l),'variance l'=var(l), 'mean y'=mean(y)))
+  
+  }
+```
+
+```{r}
+LT_FH_test = function(info){
+  l_g = info$fam$l_g
+  l_e = info$fam$l_e
+  l_g1 = info$fam$l_g1
+  l_e1 = info$fam$l_e1
+  l_g2 = info$fam$l_g2
+  l_e2 = info$fam$l_e2
+  
+  l = l_g + l_e
+  l1 = l_g1 + l_e1
+  l2 = l_g2 + l_e2
+  par(mfrow=c(1,3))
+  qqnorm(l)
+  qqnorm(l1)
+  qqnorm(l2)
+  print(c('mean l'=mean(l),'variance l'=var(l)))
+  print(c('mean l1'=mean(l1),'variance l1'=var(l1)))
+  print(c('mean l2'=mean(l2),'variance l2'=var(l2)))
+
+}
+```
+
+
+
+```{r}
+Simple_test(G1)
+```
+
+```{r}
+Simple_test(G2)
+```
+
+
+```{r}
+LT_FH_test(G3)
+```
+
+
+
+
+
