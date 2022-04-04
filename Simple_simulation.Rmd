@@ -54,7 +54,7 @@ liabilities_func = function(G, MAF, beta, N=1e5, h_sq=0.5, block_size = 1000){
   
   l_e = rnorm(N, 0, sqrt(1-h_sq))
   
-  return(c(l_g, l_e))
+  return(list('l_g'=l_g, 'l_e'=l_e))
 } 
 
 
@@ -80,8 +80,8 @@ simulation = function (filename, h_sq=0.5, C=1000, K=0.05, N=1e5, M=1e5, block_s
   beta = beta_func(C, h_sq, M)
   G = G_func(filename, MAF, N, M, block_size)
   l_g_e = liabilities_func(G, MAF, beta, N, h_sq, block_size)
-  l_g = l_g_e[1]
-  l_e = l_g_e[2]
+  l_g = l_g_e$l_g
+  l_e = l_g_e$l_e
   y = y_func(l_e, l_g, K)
   
   
@@ -99,7 +99,7 @@ simulation = function (filename, h_sq=0.5, C=1000, K=0.05, N=1e5, M=1e5, block_s
 
 
 ```{r}
-simulation("test_sim1", C=100, N=1000, M=1000, block_size = 100)
+simulation("test_sim2", C=100, N=1000, M=1000, block_size = 100)
 ```
 
 

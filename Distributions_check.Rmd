@@ -9,7 +9,7 @@ library(dplyr)
 
 
 ```{r}
-G1 = snp_attach("test_sim1.rds")
+G1 = snp_attach("test_sim2.rds")
 G2 = snp_attach("test_fbm.rds")
 G3 = snp_attach("LTFH.rds")
 ```
