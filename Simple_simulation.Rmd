@@ -1,0 +1,107 @@
+---
+title: "Simple_simulation"
+output: html_document
+---
+
+```{r}
+library(bigsnpr)
+library(dplyr)
+```
+
+```{r}
+# Make beta
+beta_func = function(C=1000, h_sq=0.5, M=1e5){
+  beta = rep(0, M)
+  beta[sample(M,C)] = rnorm(C, 0, sqrt(h_sq/C))
+  return (beta)
+}
+
+
+# Make G
+G_func = function(filename, MAF, N=1e5, M=1e5, block_size=1000){
+    G = FBM.code256(nrow = N,
+                    ncol = M,
+                    code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
+                    backingfile = filename)
+  
+  
+    
+  iterations = M/block_size
+  for(i in 1:iterations){
+    current_start = (i-1) * block_size + 1
+    current_end = current_start + block_size - 1
+  
+    probs = MAF[current_start:current_end]
+  
+    G[,current_start:current_end] = matrix(rbinom(block_size*N, 2, probs), ncol=block_size, nrow=N)
+  }
+  return(G)
+} 
+
+
+# Make liabilities
+liabilities_func = function(G, MAF, beta, N=1e5, h_sq=0.5, block_size = 1000){
+  l_g = rep(0, N)
+  iterations = N/block_size
+
+  for (i in 1:iterations){
+    current_start = (i-1) * block_size + 1
+    current_end = current_start + block_size - 1
+    l_g[current_start:current_end] = c(sweep(sweep(G[current_start:current_end,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
+                                           STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
+
+  }
+  
+  l_e = rnorm(N, 0, sqrt(1-h_sq))
+  
+  return(c(l_g, l_e))
+} 
+
+
+# Calculate who is sick
+y_func = function(l_e, l_g, K=0.05) {
+  l = l_g + l_e
+  T_ = qnorm(1-K)
+  y = ifelse(l>=T_, 1, 0)
+  return(y)
+}
+
+```
+
+
+
+```{r}
+simulation = function (filename, h_sq=0.5, C=1000, K=0.05, N=1e5, M=1e5, block_size=1000) {
+
+  
+  # Make MAF
+  MAF = runif(M, 0.01, 0.49)
+
+  beta = beta_func(C, h_sq, M)
+  G = G_func(filename, MAF, N, M, block_size)
+  l_g_e = liabilities_func(G, MAF, beta, N, h_sq, block_size)
+  l_g = l_g_e[1]
+  l_e = l_g_e[2]
+  y = y_func(l_e, l_g, K)
+  
+  
+  #save bigsnp object:
+  obj.bigsnp = list(genotypes = G, # genotypes, FBM object
+                    map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
+                    fam = tibble(FID = 1:nrow(G), l_g, l_e, y)) # fam, i.e. info on individuals
+
+  #saving the bigsnp object
+  snp_save(obj.bigsnp)
+  
+}
+
+```
+
+
+```{r}
+simulation("test_sim1", C=100, N=1000, M=1000, block_size = 100)
+```
+
+
+
+
