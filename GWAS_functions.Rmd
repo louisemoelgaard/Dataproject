@@ -5,11 +5,16 @@ output: html_document
 
 ```{r}
 # Get information
-G3 = snp_attach("test_fbm.rds")
+info = snp_attach("test_fbm.rds")
+
+
 ```
 
 ```{r}
-GWAS = function(G, y, block_size=1000) {
+GWAS = function(info, block_size=1000) {
+  G = info$genotypes
+  y = info$fam$y
+
   lms = list(rep(0, iterations))
   
   iterations = M/block_size
@@ -25,7 +30,15 @@ GWAS = function(G, y, block_size=1000) {
 
   }) %>% do.call('cbind', .) %>% t(.) %>%  as_tibble(rownames = NA)
   
-  return (out)
+  alpha = 0.05
+  p = alpha/1000000
+  causal_estimate = ifelse(out[,4]<=p, 1, 0)
+  
+  return(causal_estimate)
 }
+```
+
+```{r}
+result = GWAS(G,y)
 ```
 
