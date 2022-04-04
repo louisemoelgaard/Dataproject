@@ -9,9 +9,9 @@ library(dplyr)
 
 
 ```{r}
-G1 = snp_attach("test_sim2.rds")
-G2 = snp_attach("test_fbm.rds")
-G3 = snp_attach("test_parent_2.rds")
+G1 = snp_attach("simple.rds")
+G2 = snp_attach("parents3.rds")
+G3 = snp_attach("parents4.rds")
 ```
 
 ```{r}
@@ -60,7 +60,7 @@ Simple_test(G1)
 ```
 
 ```{r}
-Simple_test(G2)
+LT_FH_test(G2)
 ```
 
 

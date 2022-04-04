@@ -16,7 +16,7 @@ N=1000
 G = FBM.code256(nrow = N,
                 ncol = M,
                 code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
-                backingfile = "test_fbm")
+                backingfile = "simple")
 
 
 ```
