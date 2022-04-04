@@ -9,16 +9,49 @@ library(dplyr)
 
 
 ```{r}
+G1 = snp_attach("test_sim1.rds")
+G2 = snp_attach("test_fbm.rds")
 G3 = snp_attach("LTFH.rds")
 ```
 
 ```{r}
-# Get information
-G = G3$genotypes
-MAF = G3$map$MAF
-#l = G3$fam$l
-#l_g = G3$fam$l_g
-#y = G3$fam$y
+Simple_test = function(info){
+  # Get information
+  G = info$genotypes
+  MAF = info$map$MAF
+  l_g = info$fam$l_g
+  l_e = info$fam$l_e
+  y = info$fam$y
+  
+  l = l_g + l_e 
+  qqnorm(l)
+  print(c('mean'=mean(l),'variance'=var(l)))
+  
+  }
+```
+
+```{r}
+Simple_test(G1)
+```
+
+```{r}
+Simple_test(G2)
+```
+
+
+
+
+```{r}
+LT_FH_test = function(){
+  
+}
+```
+
+
+
+
+```{r}
+
 
 l_g = G3$fam$l_g
 l_e = G3$fam$l_e
@@ -40,13 +73,7 @@ MAF_mean[1:10]
 
 ```
 
-```{r}
-# Check distribution of liability (standard normal)
-l = l_g + l_e 
-qqnorm(l)
-mean(l)
-var(l)
-```
+
 
 ```{r}
 # Check distribution of liability (standard normal)

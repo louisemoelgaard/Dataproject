@@ -8,8 +8,10 @@ output: html_document
 library(bigsnpr)
 library(dplyr)
 
-M = 1e5
-N = 1e5
+#M = 1e5
+#N = 1e5
+M=1000
+N=1000
 
 G = FBM.code256(nrow = N,
                 ncol = M,
@@ -62,10 +64,10 @@ for (i in 1:iterations){
   
 
 l_e = rnorm(N, 0, sqrt(1-h_sq))
-l = l_g + l_e
 
 
 # Calculate who is sick
+l = l_g + l_e
 K = 0.05
 T_ = qnorm(1-K)
 y = ifelse(l>=T_, 1, 0)
@@ -78,7 +80,7 @@ y = ifelse(l>=T_, 1, 0)
 
 obj.bigsnp = list(genotypes = G, # genotypes, FBM object
                   map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
-                  fam = tibble(FID = 1:nrow(G), l, l_g, y)) # fam, i.e. info on individuals
+                  fam = tibble(FID = 1:nrow(G), l_g, l_e, y)) # fam, i.e. info on individuals
 
 #saving the bigsnp object
 snp_save(obj.bigsnp)

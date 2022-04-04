@@ -19,6 +19,7 @@ G3 = snp_attach("test_fbm.rds")
 ```{r}
 # Make regressions
 
+
 G = G3$genotypes
 y = G3$fam$y
 
