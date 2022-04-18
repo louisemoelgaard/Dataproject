@@ -22,7 +22,7 @@ beta_func = function(C=1000, h_sq=0.5, M=1e5){
 
 ```{r}
 # Make G
-G_func = function(filename, MAF, N=1e5, M=1e5, block_size=1000){
+G_func = function(filename, beta, MAF, N=1e5, M=1e5, block_size=1000){
   G = FBM.code256(nrow = N,
                     ncol = M,
                     code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
@@ -40,8 +40,8 @@ G_func = function(filename, MAF, N=1e5, M=1e5, block_size=1000){
     probs = MAF[current_start:current_end]
     beta_cut = beta[current_start:current_end]
   
-    G1 = matrix(rbinom(block_size*N, 2, MAF), ncol=block_size, nrow=N, byrow = T)
-    G2 = matrix(rbinom(block_size*N, 2, MAF), ncol=block_size, nrow=N, byrow = T)
+    G1 = matrix(rbinom(block_size*N, 2, probs), ncol=block_size, nrow=N, byrow = T)
+    G2 = matrix(rbinom(block_size*N, 2, probs), ncol=block_size, nrow=N, byrow = T)
     k = matrix(rnorm(block_size*N, 0, 0.0000001), ncol=block_size, nrow=N, byrow = T)
   
     G[,current_start:current_end] = round((G1 + G2)/2 - k)
@@ -94,7 +94,7 @@ simulation = function (filename, h_sq=0.5, C=1000, K=0.05, N=1e5, M=1e5, block_s
   MAF = runif(M, 0.01, 0.49)
 
   beta = beta_func(C, h_sq, M)
-  G_l = G_func(filename, MAF, N, M, block_size)
+  G_l = G_func(filename, beta, MAF, N, M, block_size)
   G = G_l$G
   l_g1 = G_l$l_g1
   l_g2 = G_l$l_g2
@@ -118,7 +118,7 @@ simulation = function (filename, h_sq=0.5, C=1000, K=0.05, N=1e5, M=1e5, block_s
 ```
 
 ```{r}
-simulation("test_parent_2", C=100, N=1000, M=1000, block_size = 100)
+simulation("test_parent", C=100, N=1000, M=1000, block_size = 100)
 ```
 
 

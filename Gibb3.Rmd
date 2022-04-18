@@ -28,31 +28,6 @@ calc_distribution = function(sigma){
 
 
 ```{r}
-# Benyttes ikke
-bounds <- function(phenos,N, T_ = 0.05){
-  interval_2 = c(0, 1-T_)
-  interval_1 = c(1-T_, 1)
-  k = length(phenos)+1
-  out = matrix(c(0,1), ncol=2, nrow=k, byrow=T)
-  i = 2
-  for (phen in phenos){
-    interval = phen * interval_1 + (1-phen)*interval_2
-    out[i,] = interval
-    i = i+1
-  }
-  q = matrix(runif(N*k, out[,1], out[,2]), ncol=k, byrow=T)
-  return(q)
-}
-
-```
-
-
-```{r}
-bounds(c(1,1,1), N=10)
-```
-
-
-```{r}
 # Vores gibbssampler
 
 
@@ -112,13 +87,9 @@ Gibb <- function(covmat, phenos, N, T_ = 0.05){
 ```
 
 
+
 ```{r}
 covmat = get_cov(0.5)
-calc_distribution(covmat)
-```
-
-
-```{r}
 test=Gibb(covmat, c(1,1,1), N=10000)
 
 par(mfrow=c(2,2))
@@ -138,10 +109,6 @@ plot(test$mu[,4], type='l')
 ```
 
 
-
-```{r}
-cov(test[[1]])
-```
 
 
 ```{r}
@@ -178,15 +145,5 @@ test2 = Gibb_notrunc(get_cov(0.5), 3000)
 plot(test$liabilities[,3], test$liabilities[,4], col=2, pch=20)
 ```
 
-
-
-
-```{r}
-plot(test2$liabilities[,1], test2$liabilities[,2], pch=20)
-points(test$liabilities[,3], test$liabilities[,3], col=2, pch=20)
-```
-```{r}
-qunif(1)
-```
 
 
