@@ -31,11 +31,8 @@ calc_distribution = function(sigma){
 # Vores gibbssampler
 
 
-Gibb <- function(covmat, phenos, N, T_ = 0.05){
-  
-  interval_2 = c(0, 1-T_)
-  interval_1 = c(1-T_, 1)
-  #bounds_ = bounds(phenos, N, T_) 
+Gibbs <- function(covmat, phenos, N=10000, K = 0.05){
+
   s_val = 0
   
   k = nrow(covmat)
@@ -45,7 +42,7 @@ Gibb <- function(covmat, phenos, N, T_ = 0.05){
   liabil = matrix(s_val, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
   mu_vec = matrix(s_val, nrow = N, ncol = k)
   
-  current_liabil = matrix(s_val, nrow = k, ncol = 1)
+  current_liabil = rep(s_val, k)
   
   
   
@@ -62,7 +59,7 @@ Gibb <- function(covmat, phenos, N, T_ = 0.05){
         current_liabil[j] = rnorm(1, mu, sqrt(sigma))
       }
       else {
-        crit <- qnorm(1-T_)
+        crit <- qnorm(1-K)
         crit_bound = pnorm(crit, mu, sqrt(sigma))
         
         interval_2 = c(0, crit_bound)
@@ -75,12 +72,10 @@ Gibb <- function(covmat, phenos, N, T_ = 0.05){
       }
       
 
-      
-      
-      #current_liabil[j] = qnorm(bounds_[i,j], mu, sqrt(sigma)) 
+
       
     }
-    liabil[i,] = t(current_liabil)
+    liabil[i,] = current_liabil
   }
   return(list('liabilities'=liabil, 'mu'=mu_vec))
 }
@@ -90,7 +85,7 @@ Gibb <- function(covmat, phenos, N, T_ = 0.05){
 
 
 ```{r}
-Gibb_notrunc <- function(covmat, N, T_ = 0.05){
+Gibbs_notrunc <- function(covmat, N=3000, K = 0.05){
 
   k = nrow(covmat)
 
@@ -117,4 +112,40 @@ Gibb_notrunc <- function(covmat, N, T_ = 0.05){
 
 
 
+```{r}
+Assign_LT_FH = function(phen_file){
+  
+  
+  
+}
+```
+
+
+```{r}
+G = snp_attach("test_parent_2.rds")
+Calc_phen(G$fam)
+
+fam = G$fam
+i=1
+N=100
+k=3
+```
+
+
+```{r}
+Calc_phen = function(fam, K=0.05, n_sib=0){
+  T_ = qnorm(1-K)
+  N = nrow(fam)
+  k = 3+n_sib
+  l_gs = matrix(0, nrow=N, ncol=k*2)
+  for (i in 1:k){
+    l_gs[,i] = (fam[[i*2]] + fam[[i*2+1]])
+  }
+  for (i in 1:k){
+    l_gs[,i+k] = (fam[[i*2]] + fam[[i*2+1]]) >=T_
+  }
+  return(l_gs)
+}
+
+```
 
