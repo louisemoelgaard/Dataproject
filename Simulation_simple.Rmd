@@ -1,5 +1,5 @@
 ---
-title: "Simple_simulation"
+title: "Simulation_simple"
 output: html_document
 ---
 

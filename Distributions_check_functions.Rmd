@@ -1,7 +1,8 @@
 ---
-title: "Distributions_check"
+title: "Distributions_check_functions"
 output: html_document
 ---
+
 ```{r}
 library(bigsnpr)
 library(dplyr)
@@ -9,7 +10,7 @@ library(dplyr)
 
 
 ```{r}
-G1 = snp_attach("simple.rds")
+G1 = snp_attach("test_sim2.rds")
 G2 = snp_attach("test_parent.rds")
 ```
 
@@ -57,10 +58,4 @@ LT_FH_test = function(info){
 ```{r}
 Simple_test(G1)
 ```
-
-```{r}
-LT_FH_test(G2)
-```
-
-
 
