@@ -18,8 +18,8 @@ get_cov = function(h2, n_sib = 0) {
 calc_distribution = function(sigma){
   out = list()
   for (i in 1:nrow(sigma)){
-    sigma_bar = sigma[i,i] - sigma[i , -i] %*% solve(sigma[-i , -i]) %*% sigma[-i , i]
-    mu_mult_bar = sigma[i , -i] %*% solve(sigma[ -i, -i])
+    mu_mult_bar = solve(sigma[ -i, -i], sigma[i , -i])
+    sigma_bar = sigma[i,i] - mu_mult_bar %*% sigma[-i , i]
     out[[i]] = list('sigma'=sigma_bar, 'mu_mult'=mu_mult_bar)
     }
   return(out)
@@ -42,37 +42,69 @@ bounds <- function(phenos,N, T_ = 0.05){
   q = matrix(runif(N*k, out[,1], out[,2]), ncol=k, byrow=T)
   return(q)
 }
- 
+
 ```
 
 
 ```{r}
-# Vores gibb sampler
+bounds(c(1,1,1), N=10)
+```
+
+
+```{r}
+# Vores gibbssampler
 
 
 Gibb <- function(covmat, phenos, N, T_ = 0.05){
-
-  bounds = bounds(phenos, N, T_) 
-
+  
+  interval_2 = c(0, 1-T_)
+  interval_1 = c(1-T_, 1)
+  #bounds_ = bounds(phenos, N, T_) 
+  s_val = 0
   
   k = nrow(covmat)
 
   const_list = calc_distribution(covmat)
   
-  liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
-  mu_vec = matrix(0, nrow = N-1, ncol = k)
-
-
-  for (i in 1:(N-1)) {
+  liabil = matrix(s_val, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
+  mu_vec = matrix(s_val, nrow = N, ncol = k)
+  
+  current_liabil = matrix(s_val, nrow = k, ncol = 1)
+  
+  
+  
+  for (i in 2:N) {
     for (j in 1:k) {
       # Udregner parametre
       sigma = const_list[[j]]$sigma
-      mu_mult = const_list[[j]]$mu_mult
-      mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
+      mu_mult_ = const_list[[j]]$mu_mult
+      mu = mu_mult_ %*% current_liabil[-j] # Udelukker den liability vi er kommet til
+    
       mu_vec[i,j] = mu
-      liabil[i,j] = qnorm(bounds[i,j], mu, sqrt(sigma))
+      
+      if (j == 1) {
+        current_liabil[j] = rnorm(1, mu, sqrt(sigma))
+      }
+      else {
+        crit <- qnorm(1-T_)
+        crit_bound = pnorm(crit, mu, sqrt(sigma))
+        
+        interval_2 = c(0, crit_bound)
+        interval_1 = c(crit_bound, 1)
+        
+        phen = phenos[j-1]
+        interval = phen * interval_1 + (1-phen)*interval_2
+        U = runif(1,interval[1], interval[2])
+        current_liabil[j] = qnorm(U, mu, sqrt(sigma))
+      }
+      
+
+      
+      
+      #current_liabil[j] = qnorm(bounds_[i,j], mu, sqrt(sigma)) 
+      
     }
-    liabil[i+1,] = liabil[i,]
+    liabil[i,] = t(current_liabil)
   }
   return(list('liabilities'=liabil, 'mu'=mu_vec))
 }
@@ -81,11 +113,13 @@ Gibb <- function(covmat, phenos, N, T_ = 0.05){
 
 ```{r}
 covmat = get_cov(0.5)
-test = Gibb(covmat, c(1,1,1) , 3000)
+calc_distribution(covmat)
 ```
 
 
 ```{r}
+test=Gibb(covmat, c(1,1,1), N=10000)
+
 par(mfrow=c(2,2))
 plot(test$liabilities[,1], type='l')
 plot(test$liabilities[,2], type='l')
@@ -118,25 +152,40 @@ Gibb_notrunc <- function(covmat, N, T_ = 0.05){
 
   liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
   mu_vec = matrix(0, nrow = N-1, ncol = k)
-
+  current_liabil = rep(0, k)
 
   for (i in 1:(N-1)) {
     for (j in 1:k) {
       # Udregner parametre
       sigma = const_list[[j]]$sigma
       mu_mult = const_list[[j]]$mu_mult
-      mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
+      mu = mu_mult %*% current_liabil[-j] # Udelukker den liability vi er kommet til
       mu_vec[i,j] = mu
-      liabil[i,j] = rnorm(1, mu, sqrt(sigma))
+      current_liabil[j] = rnorm(1, mu, sqrt(sigma))
     }
-    liabil[i+1,] = liabil[i,]
+    liabil[i,] = current_liabil
   }
-  return(list(liabil, mu_vec))
+  return(list('liabilities'=liabil, 'mu'=mu_vec))
 }
 ```
 
 ```{r}
 test2 = Gibb_notrunc(get_cov(0.5), 3000)
+```
+
+```{r}
+plot(test$liabilities[,3], test$liabilities[,4], col=2, pch=20)
+```
+
+
+
+
+```{r}
+plot(test2$liabilities[,1], test2$liabilities[,2], pch=20)
+points(test$liabilities[,3], test$liabilities[,3], col=2, pch=20)
+```
+```{r}
+qunif(1)
 ```
 
 
