@@ -28,6 +28,7 @@ calc_distribution = function(sigma){
 
 
 ```{r}
+# Benyttes ikke
 bounds <- function(phenos,N, T_ = 0.05){
   interval_2 = c(0, 1-T_)
   interval_1 = c(1-T_, 1)
