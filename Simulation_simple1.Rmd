@@ -1,0 +1,97 @@
+---
+title: "Second_simulation"
+output: html_document
+---
+
+
+```{r}
+library(bigsnpr)
+library(dplyr)
+
+#M = 1e5
+#N = 1e5
+M=1000
+N=1000
+
+G = FBM.code256(nrow = N,
+                ncol = M,
+                code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
+                backingfile = "simple")
+
+
+```
+
+```{r}
+
+# Make MAF
+MAF = runif(M, 0.01, 0.49)
+
+
+# Make G
+block_size = 1000
+iterations = M/block_size
+current_start = 1
+
+for(i in 1:iterations){
+  current_end = current_start + block_size - 1
+  probs = MAF[current_start:current_end]
+  
+  G[,current_start:current_end] = matrix(rbinom(block_size*N, 2, probs), ncol=block_size, nrow=N)
+  current_start = current_start + block_size }
+
+
+
+# Make beta
+h_sq = 0.5
+C = 100
+beta = rep(0, M)
+beta[sample(M,C)] = rnorm(C, 0, sqrt(h_sq/C))
+
+
+# Make liabilities
+l_g = rep(0, N)
+block_size = 1000
+iterations = N/block_size
+current_start = 1
+
+
+for (i in 1:iterations){
+  current_end = current_start + block_size - 1
+  l_g[current_start:current_end] = c(sweep(sweep(G[current_start:current_end,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
+                                           STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
+  current_start = current_start + block_size
+}
+  
+
+l_e = rnorm(N, 0, sqrt(1-h_sq))
+
+
+# Calculate who is sick
+l = l_g + l_e
+K = 0.05
+T_ = qnorm(1-K)
+y = ifelse(l>=T_, 1, 0)
+```
+
+
+
+```{r}
+#save bigsnp object:
+
+obj.bigsnp = list(genotypes = G, # genotypes, FBM object
+                  map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
+                  fam = tibble(FID = 1:nrow(G), l_g, l_e, y)) # fam, i.e. info on individuals
+
+#saving the bigsnp object
+snp_save(obj.bigsnp)
+
+```
+
+
+
+
+
+
+
+
+
