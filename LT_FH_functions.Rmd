@@ -27,52 +27,56 @@ calc_distribution = function(sigma){
 ```
 
 
-```{r}
-bounds <- function(phenos,N, T_ = 0.05){
-  interval_2 = c(0, 1-T_)
-  interval_1 = c(1-T_, 1)
-  k = length(phenos)+1
-  out = matrix(c(0,1), ncol=2, nrow=k, byrow=T)
-  i = 2
-  for (phen in phenos){
-    interval = phen * interval_1 + (1-phen)*interval_2
-    out[i,] = interval
-    i = i+1
-  }
-  q = matrix(runif(N*k, out[,1], out[,2]), ncol=k, byrow=T)
-  return(q)
-}
- 
-```
 
 
 ```{r}
 # Vores gibb sampler
 
 
-Gibb <- function(covmat, phenos, N, T_ = 0.05){
 
-  bounds = bounds(phenos, N, T_) 
-
+Gibbs <- function(covmat, phenos, N, T_ = 0.05){
   
+
+  s_val = 0
   k = nrow(covmat)
 
   const_list = calc_distribution(covmat)
   
-  liabil = matrix(0, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
-  mu_vec = matrix(0, nrow = N-1, ncol = k)
-
-
-  for (i in 1:(N-1)) {
+  liabil = matrix(s_val, nrow = N, ncol = k) # i formen c(l_g, l, l_p1, l_p2)
+  mu_vec = matrix(s_val, nrow = N, ncol = k)
+  
+  current_liabil = matrix(s_val, nrow = k, ncol = 1)
+  
+  
+  
+  for (i in 2:N) {
     for (j in 1:k) {
       # Udregner parametre
       sigma = const_list[[j]]$sigma
-      mu_mult = const_list[[j]]$mu_mult
-      mu = mu_mult %*% liabil[i,-j] # Udelukker den liability vi er kommet til
+      mu_mult_ = const_list[[j]]$mu_mult
+      mu = mu_mult_ %*% current_liabil[-j] # Udelukker den liability vi er kommet til
+    
       mu_vec[i,j] = mu
-      liabil[i,j] = qnorm(bounds[i,j], mu, sqrt(sigma))
+      
+      if (j == 1) {
+        current_liabil[j] = rnorm(1, mu, sqrt(sigma))
+      }
+      else {
+        crit <- qnorm(1-T_)
+        crit_bound = pnorm(crit, mu, sqrt(sigma))
+        
+        interval_2 = c(0, crit_bound)
+        interval_1 = c(crit_bound, 1)
+        
+        phen = phenos[j-1]
+        interval = phen * interval_1 + (1-phen)*interval_2
+        U = runif(1,interval[1], interval[2])
+        current_liabil[j] = qnorm(U, mu, sqrt(sigma))
+      }
+      
+
     }
-    liabil[i+1,] = liabil[i,]
+    liabil[i,] = t(current_liabil)
   }
   return(list('liabilities'=liabil, 'mu'=mu_vec))
 }
