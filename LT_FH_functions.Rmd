@@ -2,6 +2,10 @@
 title: "LT_FH"
 output: html_document
 ---
+```{r}
+library(bigsnpr)
+library(dplyr)
+```
 
 ```{r}
 get_cov = function(h2, n_sib = 0) {
@@ -12,7 +16,6 @@ get_cov = function(h2, n_sib = 0) {
   cov
 }
 ```
-
 
 ```{r}
 calc_distribution = function(sigma){
@@ -110,8 +113,6 @@ Gibbs_notrunc <- function(covmat, N=3000, K = 0.05){
 }
 ```
 
-
-
 ```{r}
 Assign_LT_FH = function(phen_file){
   
@@ -119,18 +120,6 @@ Assign_LT_FH = function(phen_file){
   
 }
 ```
-
-
-```{r}
-G = snp_attach("test_parent_2.rds")
-Calc_phen(G$fam)
-
-fam = G$fam
-i=1
-N=100
-k=3
-```
-
 
 ```{r}
 Calc_phen = function(fam, K=0.05, n_sib=0){
@@ -148,4 +137,17 @@ Calc_phen = function(fam, K=0.05, n_sib=0){
 }
 
 ```
+
+```{r}
+G = snp_attach("test.rds")
+Calc_phen(G$fam)
+
+fam = G$fam
+i=1
+N=100
+k=3
+```
+
+
+
 
