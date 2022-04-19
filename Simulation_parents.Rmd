@@ -63,7 +63,7 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
   out = list('G'=G, 'l_g1'=l_g1, 'l_g2'=l_g2)
   for (i in 1:n_sib){
     nam = paste("l_gs", i, sep = "")
-    l = list(nam = eval(parse(text = paste("l_gs", i, sep = ""))))
+    l = list(nam = eval(parse(text = nam)))
     out = append(out, l)
   } 
   return(out)
