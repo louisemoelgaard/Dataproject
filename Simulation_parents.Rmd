@@ -9,6 +9,28 @@ library(dplyr)
 ```
 
 
+
+```{r}
+get_names <- function(values, n_sib=0, id= TRUE, parents=TRUE){
+  
+  len = length(values)
+  prefix = c(rep("", len*id), rep("p",len*2*parents), rep("s",n_sib*len))
+  
+  n_peop = 1*id + 2*parents + n_sib
+  index = c(rep(0,id), rep(c(1:2),parents), rep(c(3:(2+n_sib)),n_sib!=0))
+  
+  name = rep("", len*(n_peop))
+  j = 1
+  for (i in 1:n_peop){
+    name[j:(j+len-1)] = paste0((paste(values,prefix[j:(j+len-1)], sep="_")), rep(index[i], len))
+    j = j + len
+  }
+  return(name)
+}
+```
+
+
+
 ```{r}
 # Make beta
 beta_func = function(C=1000, h_sq=0.5, M=1e5){
@@ -29,8 +51,8 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
                     backingfile = filename)
   
   
-  l_g1 = rep(0, M)
-  l_g2 = rep(0, M)
+  l_g_p1 = rep(0, M)
+  l_g_p2 = rep(0, M)
   
   iterations = M/block_size
   
@@ -47,25 +69,25 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
   
     G[,current_start:current_end] = round((G1 + G2)/2 - k)
   
-    l_g1 = l_g1 + c(sweep(sweep(G1[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
+    l_g_p1 = l_g_p1 + c(sweep(sweep(G1[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
                                            STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
-    l_g2 = l_g2 + c(sweep(sweep(G2[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
+    l_g_p2 = l_g_p2 + c(sweep(sweep(G2[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
                                            STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
     
-    for (i in 1:n_sib){
-      k = matrix(rnorm(block_size*N, 0, 0.0000001), ncol=block_size, nrow=N, byrow = T)
-      Gs = round((G1 + G2)/2 - k)
-      temp = c(sweep(sweep(Gs[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
-                                           STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
-      assign(paste("l_gs", i, sep = ""), eval(parse(text = paste("l_gs", i, sep = ""))) + temp)
-    }
+    # for (i in 1:n_sib){
+    #   k = matrix(rnorm(block_size*N, 0, 0.0000001), ncol=block_size, nrow=N, byrow = T)
+    #   Gs = round((G1 + G2)/2 - k)
+    #   temp = c(sweep(sweep(Gs[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
+    #                                        STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
+    #   assign(paste("l_gs", i, sep = ""), eval(parse(text = paste("l_gs", i, sep = ""))) + temp)
+    # }
   }
-  out = list('G'=G, 'l_g1'=l_g1, 'l_g2'=l_g2)
-  for (i in 1:n_sib){
-    nam = paste("l_gs", i, sep = "")
-    l = list(nam = eval(parse(text = nam)))
-    out = append(out, l)
-  } 
+  out = list('G'=G, 'l_g_p1'=l_g_p1, 'l_g_p2'=l_g_p2)
+  # for (i in 1:n_sib){
+  #   nam = paste("l_gs", i, sep = "")
+  #   l = list(nam = eval(parse(text = nam)))
+  #   out = append(out, l)
+  # } 
   return(out)
 }
 ```
@@ -73,31 +95,31 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
 ```{r}
 # Make liabilities
 liabilities_func = function(G, MAF, beta, N=1e5, h_sq=0.5, block_size = 1000){
-  l_g = rep(0, N)
+  l_g_0 = rep(0, N)
   iterations = N/block_size
 
   for (i in 1:iterations){
     current_start = (i-1) * block_size + 1
     current_end = current_start + block_size - 1
-    l_g[current_start:current_end] = c(sweep(sweep(G[current_start:current_end,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
+    l_g_0[current_start:current_end] = c(sweep(sweep(G[current_start:current_end,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
                                            STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
 
   }
   
-  l_e = rnorm(N, 0, sqrt(1-h_sq))
-  l_e1 = rnorm(N, 0, sqrt(1-h_sq))
-  l_e2 = rnorm(N, 0, sqrt(1-h_sq))
+  l_e_0 = rnorm(N, 0, sqrt(1-h_sq))
+  l_e_p1 = rnorm(N, 0, sqrt(1-h_sq))
+  l_e_p2 = rnorm(N, 0, sqrt(1-h_sq))
   
-  return(list('l_g'=l_g, 'l_e'=l_e, 'l_e1'=l_e1, 'l_e2'=l_e2))
+  return(list('l_g_0'=l_g_0, 'l_e_0'=l_e_0, 'l_e_p1'=l_e_p1, 'l_e_p2'=l_e_p2))
 }
 ```
 
 ```{r}
 # Calculate who is sick
-y_func = function(l_e, l_g, K=0.05) {
-  l = l_g + l_e
+y_func = function(l_e_0, l_g_0, K=0.05) {
+  l_0 = l_g_0 + l_e_0
   T_ = qnorm(1-K)
-  y = ifelse(l>=T_, 1, 0)
+  y = ifelse(l_0>=T_, 1, 0)
   return(y)
 }
 ```
@@ -110,19 +132,19 @@ simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1
   beta = beta_func(C, h_sq, M)
   G_l = G_func(filename, beta, MAF, n_sib = 0, N, M, block_size)
   G = G_l$G
-  l_g1 = G_l$l_g1
-  l_g2 = G_l$l_g2
+  l_g_p1 = G_l$l_g_p1
+  l_g_p2 = G_l$l_g_p2
   l_g_e = liabilities_func(G, MAF, beta, N, h_sq, block_size)
-  l_g = l_g_e$l_g
-  l_e = l_g_e$l_e
-  l_e1 = l_g_e$l_e1
-  l_e2 = l_g_e$l_e2
-  y = y_func(l_e, l_g, K)
+  l_g_0 = l_g_e$l_g_0
+  l_e_0 = l_g_e$l_e_0
+  l_e_p1 = l_g_e$l_e_p1
+  l_e_p2 = l_g_e$l_e_p2
+  y = y_func(l_e_0, l_g_0, K)
   
   
   obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
                   map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
-                  fam = tibble(FID = 1:nrow(G), l_g, l_e, l_g1, l_e1, l_g2, l_e2)) # fam, i.e. info on individuals
+                  fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2, l_e_p2)) # fam, i.e. info on individuals
 
   #saving the bigsnp object
   snp_save(obj.bigsnp_LTFH)
@@ -132,7 +154,7 @@ simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1
 ```
 
 ```{r}
-simulation("test_parent_2", C=100, N=1000, M=1000, n_sib = 2, block_size = 100)
+simulation("test_9", C=100, N=1000, M=1000, n_sib = 2, block_size = 100)
 ```
 
 

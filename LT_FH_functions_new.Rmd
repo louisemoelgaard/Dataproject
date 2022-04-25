@@ -2,6 +2,8 @@
 title: "LT_FH"
 output: html_document
 ---
+
+
 ```{r}
 library(bigsnpr)
 library(dplyr)
@@ -103,7 +105,6 @@ covmat = get_cov(0.5)
 Gibbs(covmat, c(0,0,1))
 ```
 
-
 ```{r}
 Gibbs_notrunc <- function(covmat, N=3000, K = 0.05, s_val = 0){
 
@@ -134,54 +135,104 @@ Gibbs_notrunc <- function(covmat, N=3000, K = 0.05, s_val = 0){
 
 
 
-```{r}
-Assign_LT_FH = function(phen_file){
 
+```{r}
+get_names <- function(values, n_sib=0, id= TRUE, parents=TRUE){
   
+  len = length(values)
+  prefix = c(rep("", len*id), rep("p",len*2*parents), rep("s",n_sib*len))
   
+  n_peop = 1*id + 2*parents + n_sib
+  index = c(rep(0,id), rep(c(1:2),parents), rep(c(3:(2+n_sib)),n_sib!=0))
+  
+  name = rep("", len*(n_peop))
+  j = 1
+  for (i in 1:n_peop){
+    name[j:(j+len-1)] = paste0((paste(values,prefix[j:(j+len-1)], sep="_")), rep(index[i], len))
+    j = j + len
+  }
+  return(name)
 }
+
 ```
 
+
+
 ```{r}
- estimate_conf = function(unique_comb, n_sib=0, h2=0.5){
+ estimate_conf = function(unique_comb, h2=0.5, n_sib=0, K=0.5){
+   k = ncol(unique_comb)
    covmat = get_cov(h2, n_sib)
+   
+   
    estimates = matrix(NA, nrow = nrow(unique_comb), ncol=4+n_sib)
     for (i in 1:nrow(unique_comb)){
-      estimates[i,] = Gibbs(covmat, unique_comb[i,])
+      estimates[i,] = Gibbs(covmat, unique_comb[i,], K=K)
     } 
    
-   return(cbind(unique_comb, estimates))
+   uneven_seq = seq(1,k*2,2)
+   even_seq = seq(2,k*2,2)
+
+   out = matrix(0, nrow=nrow(unique_comb), ncol=k*2)
+   
+   for (i in 1:k){
+     out[,uneven_seq[i]] = unique_comb[,i]
+     out[,even_seq[i]] = estimates[,i]
+   }
+   col_names = get_names(c("phen", "est_l"), n_sib)
+   colnames(out) = col_names
+   return(out)
  }
 
 ```
 
 
 ```{r}
-Calc_phen = function(fam, K=0.05, n_sib=0, h2=0.5){
+calc_phen = function(liabilities, n_sib=0, K=0){
   T_ = qnorm(1-K)
-  N = nrow(fam)
+  N = nrow(liabilities)
   k = 3+n_sib
-  l_gs = matrix(0, nrow=N, ncol=k*2)
+  full_liabil = matrix(0, nrow=N, ncol=k*2)
   for (i in 1:k){
-    l_gs[,i] = (fam[[i*2]] + fam[[i*2+1]])
-    l_gs[,i+k] = (fam[[i*2]] + fam[[i*2+1]]) >=T_
+    full_liabil[,(2*i-1)] = (liabilities[[i*2]] + liabilities[[i*2+1]])
+    full_liabil[,(2*i)] = (liabilities[[i*2]] + liabilities[[i*2+1]]) >=T_
   }
-  unique_comb = unique(l_gs[,-c(1:3+n_sib)])
-  return(unique_comb)
+  
+  col_names=get_names(c("l","phen"), n_sib)
+  colnames(full_liabil) = col_names
+
+  return(full_liabil)
 }
 
 ```
 
 ```{r}
-G = snp_attach("test_parent.rds")
+estimate_liabilities = function(liabilities, K=0.05, n_sib=0, h2=0.5){
+  k = 3+n_sib
+  
+  full_liabil = calc_phen(liabilities, n_sib, K)
+  unique_comb = unique(full_liabil[,seq(2,k*2,2)])
+  estimated_liabil = estimate_conf(unique_comb, h2, n_sib, K)
+  
+  key = get_names(c("phen"),n_sib) 
+  temp = left_join(as_tibble(full_liabil),as_tibble(estimated_liabil),by=key)
+  order = get_names(c("l", "l_g", "l_e", "phen", 'est_l'), n_sib)
+  return(bind_cols(liabilities,temp) %>% relocate(order))
+  
+  
+}
+
+
+```
+
+
+
+```{r}
+G = snp_attach("test_9.rds")
 
 fam = G$fam
 
-temp = Calc_phen(G$fam)
+estimate_liabilities(fam)
 
-
-
-estimate_conf(temp)
 
 ```
 
