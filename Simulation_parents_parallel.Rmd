@@ -75,19 +75,15 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
     l_g_p2 = c(sweep(sweep(G2[,], FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
                                            STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
     
-    # for (i in 1:n_sib){
-    #   k = matrix(rnorm(block_size*N, 0, 0.0000001), ncol=block_size, nrow=N, byrow = T)
-    #   Gs = round((G1 + G2)/2 - k)
-    #   temp = c(sweep(sweep(Gs, FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
-    #                                        STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
-    #   assign(paste("l_gs", i, sep = ""), eval(parse(text = paste("l_gs", i, sep = ""))) + temp)
-    # }
-  out = tibble('l_g1_partial'=l_g_p1, 'l_g2_partial'=l_g_p2)  
-  #for (i in 1:n_sib){
-   # nam = paste("l_gs", i, sep = "")
-    #l = list(nam = eval(parse(text = nam)))
-    #out = append(out, l)
-  #} 
+    l_g_sibs = list(rep(0, n_sib))
+    for (i in 1:n_sib){
+      k = matrix(rnorm(block_size*N, 0, 0.0000001), ncol=block_size, nrow=N, byrow = T)
+      Gs = round((G1 + G2)/2 - k)
+      temp = c(sweep(sweep(Gs, FUN = '-', STATS=2*probs, MARGIN = 2), FUN='/',
+                                           STATS=sqrt(2*probs*(1-probs)), MARGIN = 2)  %*% beta_cut)
+      l_g_sibs[[1]][i] = temp
+      }
+  out = tibble('l_g1_partial'=l_g_p1, 'l_g2_partial'=l_g_p2, "l_g_sibs" = l_g_sibs)
   return(out)
   }, future.seed = TRUE) %>% 
     do.call(what = "bind_cols", .) %>% 
@@ -100,9 +96,9 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
 ```{r}
 beta_ = beta_func(C = 10, h_sq = 0.5, M = 100)
 MAF = runif(100, 0.01, 0.49)
-plan("multisession")
-k = G_func(filename = "test_13", beta = beta_, MAF = MAF, n_sib = 2, N = 100, block_size = 10, M = 100)
-k
+#plan("multisession")
+k = G_func(filename = "test", beta = beta_, MAF = MAF, n_sib = 2, N = 100, block_size = 10, M = 100)
+k$liabilities
 ```
 
 
