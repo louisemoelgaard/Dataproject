@@ -154,6 +154,8 @@ get_names <- function(values, n_sib=0, id= TRUE, parents=TRUE){
   return(name)
 }
 
+
+get_names(c("l_g","l_e"), id=TRUE, parents = FALSE, )
 ```
 
 
@@ -178,7 +180,7 @@ get_names <- function(values, n_sib=0, id= TRUE, parents=TRUE){
      out[,uneven_seq[i]] = unique_comb[,i]
      out[,even_seq[i]] = estimates[,i]
    }
-   col_names = get_names(c("phen", "est_l"), n_sib)
+   col_names = get_names(c("phen", "est_l_g"), n_sib)
    colnames(out) = col_names
    return(out)
  }
@@ -215,7 +217,7 @@ estimate_liabilities = function(liabilities, K=0.05, n_sib=0, h2=0.5){
   
   key = get_names(c("phen"),n_sib) 
   temp = left_join(as_tibble(full_liabil),as_tibble(estimated_liabil),by=key)
-  order = get_names(c("l", "l_g", "l_e", "phen", 'est_l'), n_sib)
+  order = get_names(c("l", "l_g", "l_e", "phen", 'est_l_g'), n_sib)
   return(bind_cols(liabilities,temp) %>% relocate(order))
   
   
@@ -227,15 +229,26 @@ estimate_liabilities = function(liabilities, K=0.05, n_sib=0, h2=0.5){
 
 
 ```{r}
-G = snp_attach("test_9.rds")
 
-fam = G$fam
+#G = snp_attach("test2.rds")
 
-estimate_liabilities(fam)
+G1 = snp_attach("test15.rds")
+
+fam = G1$fam
+
+k=estimate_liabilities(fam, n_sib=2)
 
 
 ```
 
+
+```{r}
+plot(k$est_l_g_0, k$l_g_0)
+abline(a=0, b=1)
+```
+```{r}
+bigsnpr::
+```
 
 
 

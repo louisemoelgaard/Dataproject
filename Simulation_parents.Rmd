@@ -154,7 +154,7 @@ simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1
 ```
 
 ```{r}
-simulation("test_9", C=100, N=1000, M=1000, n_sib = 2, block_size = 100)
+simulation("test3", C=100, N=1000, M=1000, n_sib = 2, block_size = 100)
 ```
 
 

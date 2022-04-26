@@ -26,6 +26,7 @@ get_names <- function(values, n_sib=0, id= TRUE, parents=TRUE){
   }
   return(name)
 }
+
 ```
 
 
@@ -140,13 +141,12 @@ y_func = function(l_e_0, l_g_0, K=0.05) {
 simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1e5, block_size=1000) {
   # Make MAF
   MAF = runif(M, 0.01, 0.49)
-
   beta = beta_func(C, h_sq, M)
-  G_l = G_func(filename, beta, MAF, n_sib = n_sib, N, M, block_size)
+  G_l = G_func(filename, beta, MAF, n_sib, N, M, block_size)
   G = G_l$G
   l_g_p1 = G_l$l_g_p1
   l_g_p2 = G_l$l_g_p2
-  l_g_e = liabilities_func(G, MAF, beta, n_sib = n_sib, N, h_sq, block_size)
+  l_g_e = liabilities_func(G, MAF, beta, n_sib, N, h_sq, block_size)
   l_g_0 = l_g_e$l_g_0
   l_e_0 = l_g_e$l_e_0
   l_e_p1 = l_g_e$l_e_p1
@@ -157,20 +157,36 @@ simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1
   }
   y = y_func(l_e_0, l_g_0, K)
   
+  
+
   if (n_sib != 0){
-  obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
+    
+   col_names_g = get_names(c("l_g"), id=FALSE, parents = FALSE, n_sib)
+   col_names_e = get_names(c("l_e"), id=FALSE, parents = FALSE, n_sib)
+   order = get_names(c("l_g","l_e"), id=FALSE, parents = FALSE, n_sib) 
+   
+
+   
+   colnames(l_g_sibs) = col_names_g
+   
+   colnames(l_e_sibs) = col_names_e
+   #print(l_e_sibs)
+   
+   l_all_sibs = as_tibble(cbind(l_g_sibs,l_e_sibs)) %>% relocate(order)
+   #print(l_all_sibs)
+    
+   obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
                   map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
-                  fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_g_sibs, l_e_p1, l_g_p2,
-                               l_e_p2, l_e_sibs)) # fam, i.e. info on individuals
-  }
-  else{
-  obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
+                  fam = bind_cols(tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2,
+                               l_e_p2), l_all_sibs)) # fam, i.e. info on individuals
+   }
+   else{
+   obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
                   map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
-                  fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2,
-                               l_e_p2))   
-  }
-  #saving the bigsnp object
-  snp_save(obj.bigsnp_LTFH)
+                  fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2, l_e_p2))   
+   }
+   #saving the bigsnp object
+   snp_save(obj.bigsnp_LTFH)
   
 }
 
