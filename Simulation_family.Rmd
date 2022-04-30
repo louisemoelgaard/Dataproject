@@ -127,15 +127,6 @@ liabilities_func = function(G, MAF, beta, n_sib = 0, N=1e5, h_sq=0.5, block_size
 }
 ```
 
-```{r}
-# Calculate who is sick
-y_func = function(l_e_0, l_g_0, K=0.05) {
-  l_0 = l_g_0 + l_e_0
-  T_ = qnorm(1-K)
-  y = ifelse(l_0>=T_, 1, 0)
-  return(y)
-}
-```
 
 ```{r}
 simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1e5, block_size=1000) {
@@ -155,7 +146,6 @@ simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1
     l_g_sibs = G_l$l_g_sibs
     l_e_sibs = l_g_e$l_e_sibs
   }
-  y = y_func(l_e_0, l_g_0, K)
   
   
 

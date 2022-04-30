@@ -7,6 +7,7 @@ output: html_document
 ```{r}
 library(bigsnpr)
 library(dplyr)
+library(ggplot2)
 ```
 
 ```{r}
@@ -36,7 +37,7 @@ calc_distribution = function(sigma){
 # Vores gibbssampler
 
 
-Gibbs <- function(covmat, phenos, N=10000, K = 0.05, s_val = 0){
+Gibbs <- function(covmat, phenos, N=10000, K = 0.05, s_val = 0, min_run=400, all_est=FALSE){
 
   
   k = nrow(covmat)
@@ -85,19 +86,26 @@ Gibbs <- function(covmat, phenos, N=10000, K = 0.05, s_val = 0){
     }
   }
 
-  if(s>start_run){
+  if(s>(start_run+min_run)){
       end_val = s-start_run
       if(sd(liabil[1:end_val,1])/sqrt(length(liabil[1:end_val,1])) < 0.1){
+        if (all_est){
+          return(liabil[1:end_val,])
+        }
         return(colMeans(liabil[1:end_val,]))
+        
       }
   }
       
-  
-  #return(list('liabilities'=liabil, 'mu'=mu_vec))
   }
 }
   
 ```
+
+
+
+
+
 
 
 ```{r}
@@ -275,10 +283,37 @@ bonferroni_correct = function(summary, alpha=0.05){
 }
 ```
 
-
-
 ```{r}
 result = bonferroni_correct(test)
 
 ```
+
+
+```{r}
+
+control_plot = function(h2, phenos, col="black"){
+  covmat = get_cov(h2)
+  estimates = Gibbs(covmat, phenos, all_est = TRUE, min_run = 8000)
+  sd = sd(estimates[,1])
+  mean = mean(estimates[,1])
+
+  
+  ggplot(data.frame(x = c(-2, 3)), aes(x = x)) +
+    stat_function(fun = dnorm, args = list(mean = mean, sd = sd), mapping = aes(x),color=col) +
+    stat_function(fun = dnorm, args = list(mean = 0, sd = sqrt(h2)), mapping = aes(x)) +
+    geom_vline(xintercept=mean, linetype="dashed",color=col) +
+    geom_text(aes(x=mean+0.2, label=round(mean,2), y=0), colour=col)
+  
+
+  }
+
+```
+
+```{r}
+par(mfrow=c(1,3))
+control_plot(0.5, c(0,0,0), col="blue")
+control_plot(0.5, c(0,0,1), col="purple")
+control_plot(0.5, c(1,1,1), col="red")
+```
+
 
