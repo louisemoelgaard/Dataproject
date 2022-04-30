@@ -247,8 +247,38 @@ plot(k$est_l_g_0, k$l_g_0)
 abline(a=0, b=1)
 ```
 ```{r}
-bigsnpr::
+# Calculate who is sick
+y_func = function(l_e_0, l_g_0, K=0.05) {
+  l_0 = l_g_0 + l_e_0
+  T_ = qnorm(1-K)
+  y = ifelse(l_0>=T_, 1, 0)
+  return(y)
+}
+```
+
+```{r}
+
+y = y_func(G1$fam$l_g_0,G1$fam$l_e_0)
+test = big_univLinReg(G1$genotypes, y, covar.train=matrix(k$est_l_g_0))
+test$p.value <- predict(test, log10 = FALSE)
+plot(test)
+
+```
+
+```{r}
+bonferroni_correct = function(summary, alpha=0.05){
+
+  p = alpha/1000000
+  causal_estimate = (summary$p.value<=p)-0
+  
+  return(causal_estimate)
+}
 ```
 
 
+
+```{r}
+result = bonferroni_correct(test)
+
+```
 
