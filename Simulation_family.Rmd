@@ -165,18 +165,18 @@ simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1
    l_all_sibs = as_tibble(cbind(l_g_sibs,l_e_sibs)) %>% relocate(order)
    #print(l_all_sibs)
     
-   obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
+   obj.bigsnp = list(genotypes = G, # genotypes, FBM object
                   map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
                   fam = bind_cols(tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2,
                                l_e_p2), l_all_sibs)) # fam, i.e. info on individuals
    }
    else{
-   obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
+   obj.bigsnp = list(genotypes = G, # genotypes, FBM object
                   map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
                   fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2, l_e_p2))   
    }
    #saving the bigsnp object
-   snp_save(obj.bigsnp_LTFH)
+   snp_save(obj.bigsnp)
   
 }
 

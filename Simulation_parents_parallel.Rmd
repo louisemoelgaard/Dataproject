@@ -57,7 +57,7 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
   
   iterations = M/block_size
   
-  liabil = furture_lapply(1:iterations, function(i){
+  liabil = future_lapply(1:iterations, function(i){
     current_start = (i-1) * block_size + 1
     current_end = current_start + block_size - 1
   
@@ -92,28 +92,53 @@ G_func = function(filename, beta, MAF, n_sib = 0, N=1e5, M=1e5, block_size=1000)
   
 
   out = bind_cols(tibble('l_g_partial_p1'=l_g_p1, 'l_g_partial_p2'=l_g_p2), as_tibble(l_g_sibs))
-  #print(out)  #, future.seed = TRUE
   return(out)
-  }) %>% 
-   do.call(bind_cols, .) %>% 
-   mutate(l_g_p1 = rowSums(select(., contains("p1"))), l_g_p2 = rowSums(select(., contains("p2")))) ##%>%
-  #   ##select(., -contains("partial")) 
-  # return(list("G" = G, "liabilities" = liabil))
+  },future.seed = TRUE) %>% 
+   do.call(bind_cols, .) %>% collapse_data(., n_sib)
   return(liabil)
   }
 ```
+
+
+```{r}
+collapse_data = function(data, n_sib){
+  search = get_names("", id=FALSE, n_sib)
+  expect_names = get_names("l_g", id=FALSE, n_sib)
+  col_names = colnames(data)
+  
+  iterations = length(search)
+  
+  out = lapply(1:iterations, function(i) {
+    new_col = rowSums(select(data, contains(search[i])))
+    return(new_col)
+    
+  }) %>% do.call(bind_cols, .)
+  
+  colnames(out) = expect_names
+  
+  
+  return(out)
+  
+}
+```
+
+
+
+
 
 ```{r}
 beta_ = beta_func(C = 10, h_sq = 0.5, M = 100)
 MAF = runif(100, 0.01, 0.49)
 #plan("multisession")
-k = G_func(filename = "test19", beta = beta_, MAF = MAF, n_sib = 2, N = 100, block_size = 10, M = 100)
+k = G_func(filename = "test5", beta = beta_, MAF = MAF, n_sib = 2, N = 100, block_size = 10, M = 100)
 k
 ```
 
 
+
 ```{r}
-liabilities_func = function(G, MAF, beta, N=1e5, h_sq=0.5, block_size = 1000){
+# Make liabilities
+liabilities_func = function(G, MAF, beta, n_sib = 0, N=1e5, h_sq=0.5, block_size = 1000){
   l_g_0 = rep(0, N)
   iterations = N/block_size
 
@@ -129,7 +154,14 @@ liabilities_func = function(G, MAF, beta, N=1e5, h_sq=0.5, block_size = 1000){
   l_e_p1 = rnorm(N, 0, sqrt(1-h_sq))
   l_e_p2 = rnorm(N, 0, sqrt(1-h_sq))
   
+  if (n_sib != 0){
+  l_e_sibs = matrix(rnorm(N * n_sib, 0, sqrt(1-h_sq)), ncol = n_sib)
+    return(list('l_g_0'=l_g_0, 'l_e_0'=l_e_0, 'l_e_p1'=l_e_p1, 'l_e_p2'=l_e_p2, "l_e_sibs"
+                = l_e_sibs))
+  }
+  else{
   return(list('l_g_0'=l_g_0, 'l_e_0'=l_e_0, 'l_e_p1'=l_e_p1, 'l_e_p2'=l_e_p2))
+  }
 }
 ```
 
@@ -147,36 +179,54 @@ y_func = function(l_e_0, l_g_0, K=0.05) {
 simulation = function (filename, h_sq=0.5, n_sib = 0, C=1000, K=0.05, N=1e5, M=1e5, block_size=1000) {
   # Make MAF
   MAF = runif(M, 0.01, 0.49)
-
   beta = beta_func(C, h_sq, M)
-  G_l = G_func(filename, beta, MAF, n_sib = 0, N, M, block_size)
+  G_l = G_func(filename, beta, MAF, n_sib, N, M, block_size)
   G = G_l$G
-  
-  col_names = get_names(c("l_g", "l_e"), n_sib)
-  for (name in col_names){
-    # iterer over col_names og går hvad nedestående kode gør men effektivt (+ søskende)
-    
-  }
-  
-
   l_g_p1 = G_l$l_g_p1
   l_g_p2 = G_l$l_g_p2
-  l_g_e = liabilities_func(G, MAF, beta, N, h_sq, block_size)
+  l_g_e = liabilities_func(G, MAF, beta, n_sib, N, h_sq, block_size)
   l_g_0 = l_g_e$l_g_0
   l_e_0 = l_g_e$l_e_0
   l_e_p1 = l_g_e$l_e_p1
   l_e_p2 = l_g_e$l_e_p2
-  y = y_func(l_e_0, l_g_0, K)
+  if (n_sib != 0){
+    l_g_sibs = G_l$l_g_sibs
+    l_e_sibs = l_g_e$l_e_sibs
+  }
   
   
-  obj.bigsnp_LTFH = list(genotypes = G, # genotypes, FBM object
-                  map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
-                  fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2, l_e_p2)) # fam, i.e. info on individuals
 
-  #saving the bigsnp object
-  snp_save(obj.bigsnp_LTFH)
+  if (n_sib != 0){
+    
+   col_names_g = get_names(c("l_g"), id=FALSE, parents = FALSE, n_sib)
+   col_names_e = get_names(c("l_e"), id=FALSE, parents = FALSE, n_sib)
+   order = get_names(c("l_g","l_e"), id=FALSE, parents = FALSE, n_sib) 
+   
+
+   
+   colnames(l_g_sibs) = col_names_g
+   
+   colnames(l_e_sibs) = col_names_e
+   #print(l_e_sibs)
+   
+   l_all_sibs = as_tibble(cbind(l_g_sibs,l_e_sibs)) %>% relocate(order)
+   #print(l_all_sibs)
   
+   obj.bigsnp = list(genotypes = G, # genotypes, FBM object
+                  map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
+                  fam = bind_cols(tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2,
+                               l_e_p2), l_all_sibs)) # fam, i.e. info on individuals
+   }
+   else{
+   obj.bigsnp = list(genotypes = G, # genotypes, FBM object
+                  map = tibble(snp = 1:ncol(G), MAF, beta), # map, i.e. SNP info
+                  fam = tibble(FID = 1:nrow(G), l_g_0, l_e_0, l_g_p1, l_e_p1, l_g_p2, l_e_p2))   
+   }
+   #saving the bigsnp object
+   snp_save(obj.bigsnp)
   
+}
+
 }
 
 ```
