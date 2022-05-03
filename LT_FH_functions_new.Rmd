@@ -316,14 +316,6 @@ control_plot(0.5, c(0,0,1), col="purple")
 control_plot(0.5, c(1,1,1), col="red")
 ```
 
-```{r}
-library(bigstatsr)
-```
 
-```{r}
-x = snp_attach("test.rds")
-x$genotypes
-l = big_univLinReg(X = x$genotypes, y.train = k$est_l_g_0)
-l
-```
+
 

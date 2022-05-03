@@ -5,21 +5,29 @@ output: html_document
 
 ```{r}
 # Get information
-info = snp_attach("test_fbm.rds")
+library(bigsnpr)
+library(dplyr)
+info = snp_attach("test.rds")
 
+y_func = function(l_e_0, l_g_0, K=0.05) {
+  l_0 = l_g_0 + l_e_0
+  T_ = qnorm(1-K)
+  y = ifelse(l_0>=T_, 1, 0)
+  return(y)
+}
 
+y = y_func(info$fam$l_e_0, info$fam$l_g_0)
 ```
 
 ```{r}
-GWAS = function(info, block_size=1000) {
-  G = info$genotypes
-  y = info$fam$y
+GWAS = function(G, y, block_size=1000) {
+
+  
+  
+  iterations = dim(G)[2]/block_size
 
   lms = list(rep(0, iterations))
   
-  iterations = M/block_size
-
-
   out = lapply(1:iterations, function(i) {
                 current_start = (i-1) * block_size + 1
                 current_end = current_start + block_size - 1
@@ -39,6 +47,21 @@ GWAS = function(info, block_size=1000) {
 ```
 
 ```{r}
-result = GWAS(G,y)
+result = GWAS(info$genotypes,y)
+```
+
+```{r}
+GWAS_ltfh <- function(G, y, ncores = 1, p = 0.05/1000000){
+  lm = big_univLinReg(X = G, y.train = y, ncores = ncores)
+  p_vals = predict(lm, log10 = FALSE)
+  prediction = ifelse(p_vals <=p, 1, 0)
+  return(cbind(lm, p_vals, prediction))
+}
+```
+
+```{r}
+result = GWAS_ltfh(info$genotypes,y)
+
+result
 ```
 
