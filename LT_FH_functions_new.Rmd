@@ -217,6 +217,7 @@ calc_phen = function(liabilities, n_sib=0, K=0){
 
 ```{r}
 estimate_liabilities = function(liabilities, K=0.05, n_sib=0, h2=0.5){
+  
   k = 3+n_sib
   
   full_liabil = calc_phen(liabilities, n_sib, K)
@@ -240,7 +241,7 @@ estimate_liabilities = function(liabilities, K=0.05, n_sib=0, h2=0.5){
 
 #G = snp_attach("test2.rds")
 
-G1 = snp_attach("test.rds")
+G1 = snp_attach("test9.rds")
 
 fam = G1$fam
 
