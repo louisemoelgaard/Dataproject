@@ -11,7 +11,7 @@ library(dplyr)
 
 ```{r}
 G1 = snp_attach("test_sim2.rds")
-G2 = snp_attach("test_parent.rds")
+G2 = snp_attach("test4.rds")
 ```
 
 ```{r}
@@ -32,16 +32,19 @@ Simple_test = function(info){
 
 ```{r}
 LT_FH_test = function(info){
-  l_g = info$fam$l_g
-  l_e = info$fam$l_e
-  l_g1 = info$fam$l_g1
-  l_e1 = info$fam$l_e1
-  l_g2 = info$fam$l_g2
-  l_e2 = info$fam$l_e2
+  l_g = info$fam$l_g_0
+  l_e = info$fam$l_e_0
+  l_g1 = info$fam$l_g_p1
+  l_e1 = info$fam$l_e_p1
+  l_g2 = info$fam$l_g_p2
+  l_e2 = info$fam$l_e_p2
+  l_g3 = info$fam$l_g_s3
+  l_e3 = info$fam$l_e_s3
   
   l = l_g + l_e
   l1 = l_g1 + l_e1
   l2 = l_g2 + l_e2
+  l3 = l_g3 + l_e3
   par(mfrow=c(1,3))
   qqnorm(l)
   qqnorm(l1)
@@ -49,6 +52,7 @@ LT_FH_test = function(info){
   print(c('mean l'=mean(l),'variance l'=var(l)))
   print(c('mean l1'=mean(l1),'variance l1'=var(l1)))
   print(c('mean l2'=mean(l2),'variance l2'=var(l2)))
+    print(c('s3 l3'=mean(l3),'variance l3'=var(l3)))
 
 }
 ```
@@ -56,6 +60,6 @@ LT_FH_test = function(info){
 
 
 ```{r}
-Simple_test(G1)
+LT_FH_test(G2)
 ```
 

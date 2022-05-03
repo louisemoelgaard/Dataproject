@@ -68,7 +68,7 @@ assign_phen = function(G1, G2, N=1e5, block_size=1000){
 
 
 ```{r}
-sim_basic = function(){
+sim_basic = function(i, beta, MAF, n_sib = 0, N=1e5, block_size=1000){
   
 }
 
@@ -133,25 +133,28 @@ G_func = function(filename, beta, MAF, fam = TRUE, n_sib = 0, N=1e5, M=1e5, bloc
                     code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
                     backingfile = filename)
   
+  if (fam = TRUE){
+    l_g_p1 = rep(0, M)
+    l_g_p2 = rep(0, M)
   
-  l_g_p1 = rep(0, M)
-  l_g_p2 = rep(0, M)
+    iterations = M/block_size
   
-  iterations = M/block_size
-  
-  liabil = future_lapply(1:iterations, function(i){
-
-    
-    fam_sim = sim_fam(i, beta, MAF, n_sib, N, block_size)
-    
-    index = get_index(i, block_size)
-    G[,index$start:index$end] = fam_sim$G_input
-    fam_tibble = fam_sim$fam_tibble
+    liabil = future_lapply(1:iterations, function(i){
+      fam_sim = sim_fam(i, beta, MAF, n_sib, N, block_size)
+      index = get_index(i, block_size)
+      G[,index$start:index$end] = fam_sim$G_input
+      fam_tibble = fam_sim$fam_tibble
     
 
-    return(fam_tibble)
-    },future.seed = TRUE) %>% 
-   do.call(bind_cols, .) %>% collapse_data(., n_sib)
+      return(fam_tibble)
+      },future.seed = TRUE) %>% 
+    do.call(bind_cols, .) %>% collapse_data(., n_sib)
+  
+  }
+  else{
+    simple_sim = sim_basic()
+  }
+  
   return(list("G"=G, "liabil"=liabil))
   }
 ```
@@ -197,10 +200,10 @@ liabilities_func = function(G, MAF, beta, n_sib = 0, N=1e5, h_sq=0.5, block_size
   iterations = N/block_size
 
   for (i in 1:iterations){
-    current_start = (i-1) * block_size + 1
-    current_end = current_start + block_size - 1
-    l_g_0[current_start:current_end] = c(sweep(sweep(G[current_start:current_end,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
-                                           STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
+    index = get_index(i, block_size)
+    probs = MAF[index$start:index$end]
+    beta_cut = beta[index$start:index$end]
+    l_g_0[index$start:index$end] = normalized_prod(G[index$start:index$end,], probs, beta_cut)
 
   }
   
@@ -266,10 +269,10 @@ simulation = function (filename, h_sq=0.5, fam = TRUE, n_sib = 0, C=1000, K=0.05
 ```
 
 ```{r}
-simulation("test39", C=100, N=1000, M=1000, n_sib = 2, block_size = 10)
+simulation("test4", C=100, N=1000, M=1000, n_sib = 2, block_size = 1000)
 ```
 ```{r}
-snp_attach("test10.rds")
+snp_attach("test4.rds")
 ```
 
 
