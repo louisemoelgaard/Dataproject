@@ -240,13 +240,13 @@ estimate_liabilities = function(liabilities, K=0.05, n_sib=0, h2=0.5){
 
 #G = snp_attach("test2.rds")
 
-G1 = snp_attach("test15.rds")
+G1 = snp_attach("test.rds")
 
 fam = G1$fam
 
 k=estimate_liabilities(fam, n_sib=2)
 
-
+k
 ```
 
 
@@ -316,4 +316,14 @@ control_plot(0.5, c(0,0,1), col="purple")
 control_plot(0.5, c(1,1,1), col="red")
 ```
 
+```{r}
+library(bigstatsr)
+```
+
+```{r}
+x = snp_attach("test.rds")
+x$genotypes
+l = big_univLinReg(X = x$genotypes, y.train = k$est_l_g_0)
+l
+```
 
