@@ -133,7 +133,7 @@ G_func = function(filename, beta, MAF, fam = TRUE, n_sib = 0, N=1e5, M=1e5, bloc
                     code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
                     backingfile = filename)
   
-  if (fam = TRUE){
+
     l_g_p1 = rep(0, M)
     l_g_p2 = rep(0, M)
   
@@ -150,10 +150,7 @@ G_func = function(filename, beta, MAF, fam = TRUE, n_sib = 0, N=1e5, M=1e5, bloc
       },future.seed = TRUE) %>% 
     do.call(bind_cols, .) %>% collapse_data(., n_sib)
   
-  }
-  else{
-    simple_sim = sim_basic()
-  }
+
   
   return(list("G"=G, "liabil"=liabil))
   }
