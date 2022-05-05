@@ -178,22 +178,24 @@ get_names(c("l_g","l_e"), id=TRUE, parents = FALSE, )
     for (i in 1:nrow(unique_comb)){
       estimates[i,] = LTFH(covmat, unique_comb[i,], K=K)
     } 
+   col_names = get_names(c("phen"), n_sib)
+   pheno = as_tibble(unique_comb)
+   colnames(pheno) = col_names
+   esti = as_tibble(estimates[,1])
+   colnames(esti) = 'l_g_est_0'
    
-   uneven_seq = seq(1,k*2,2)
-   even_seq = seq(2,k*2,2)
-
-   out = matrix(0, nrow=nrow(unique_comb), ncol=k*2)
-   
-   for (i in 1:k){
-     out[,uneven_seq[i]] = unique_comb[,i]
-     out[,even_seq[i]] = estimates[,i]
-   }
-   col_names = get_names(c("phen", "est_l_g"), n_sib)
-   colnames(out) = col_names
-   return(out)
+   return(bind_cols(pheno, esti))
  }
 
 ```
+
+
+
+```{r}
+g = matrix(c(1,1,1,0,0,0), nrow=2)
+estimate_conf(g)
+```
+
 
 
 ```{r}
@@ -243,10 +245,15 @@ estimate_liabilities = function(pheno, K=0.05, n_sib=0, h2=0.5){
   estimated_liabil = estimate_conf(unique_comb, h2, n_sib, K)
   key = get_names(c("phen"),n_sib) 
   full_data = left_join(as_tibble(pheno),as_tibble(estimated_liabil),by=key)
-  order = get_names(c("phen", 'est_l_g'), n_sib)
-  return(as_tibble(full_data) %>% relocate(order))
+  return(as_tibble(full_data))
 }
 
+G1 = snp_attach("test4.rds")
+
+fam = G1$fam
+g = calc_phen(fam, n_sib=2)
+k=estimate_liabilities(g, n_sib=2)
+k
 
 ```
 
@@ -258,9 +265,9 @@ get_all_data = function(data, K=0.05, n_sib=0, h2=0.5){
   full_liabil = calc_full_liabil(data, n_sib)
   pheno = calc_phen(data, n_sib, K)
   estimate_liabil = estimate_liabilities(pheno, K, n_sib, h2)
-  order = get_names(c('l', 'l_g', 'l_e', "phen", 'est_l_g'), n_sib)
+  order = get_names(c('l', 'l_g', 'l_e', "phen"), n_sib)
+  print(order)
   full_data = bind_cols(as_tibble(full_liabil), estimate_liabil, data) %>% relocate(order)
-  
   
   return(full_data)
 }
