@@ -37,7 +37,7 @@ calc_distribution = function(sigma){
 # Vores gibbssampler
 
 
-Gibbs <- function(covmat, phenos, N=10000, K = 0.05, s_val = 0, min_run=400, all_est=FALSE){
+LTFH <- function(covmat, phenos, N=10000, K = 0.05, s_val = 0, min_run=400, all_est=FALSE){
 
   
   k = nrow(covmat)
@@ -110,11 +110,11 @@ Gibbs <- function(covmat, phenos, N=10000, K = 0.05, s_val = 0, min_run=400, all
 
 ```{r}
 covmat = get_cov(0.5)
-Gibbs(covmat, c(0,0,1))
+LTFH(covmat, c(0,0,1))
 ```
 
 ```{r}
-Gibbs_notrunc <- function(covmat, N=3000, K = 0.05, s_val = 0){
+LTFH_notrunc <- function(covmat, N=3000, K = 0.05, s_val = 0){
 
   k = nrow(covmat)
 
@@ -176,7 +176,7 @@ get_names(c("l_g","l_e"), id=TRUE, parents = FALSE, )
    
    estimates = matrix(NA, nrow = nrow(unique_comb), ncol=4+n_sib)
     for (i in 1:nrow(unique_comb)){
-      estimates[i,] = Gibbs(covmat, unique_comb[i,], K=K)
+      estimates[i,] = LTFH(covmat, unique_comb[i,], K=K)
     } 
    
    uneven_seq = seq(1,k*2,2)
@@ -197,44 +197,76 @@ get_names(c("l_g","l_e"), id=TRUE, parents = FALSE, )
 
 
 ```{r}
-calc_phen = function(liabilities, n_sib=0, K=0){
+calc_phen = function(liabilities, n_sib=0, K=0.05){
   T_ = qnorm(1-K)
   N = nrow(liabilities)
   k = 3+n_sib
-  full_liabil = matrix(0, nrow=N, ncol=k*2)
+  phen = matrix(0, nrow=N, ncol=k)
+  search = get_names(c(""), n_sib)
   for (i in 1:k){
-    full_liabil[,(2*i-1)] = (liabilities[[i*2]] + liabilities[[i*2+1]])
-    full_liabil[,(2*i)] = (liabilities[[i*2]] + liabilities[[i*2+1]]) >=T_
+    phen[,(i)] = rowSums(select(liabilities, contains(search[i]))) >=T_
   }
   
-  col_names=get_names(c("l","phen"), n_sib)
-  colnames(full_liabil) = col_names
+  col_names=get_names(c("phen"), n_sib)
+  colnames(phen) = col_names
 
-  return(full_liabil)
+  return(phen)
 }
 
+
+
+calc_full_liabil = function(liabilities, n_sib=0){
+  N = nrow(liabilities)
+  k = 3+n_sib
+  full_l = matrix(0, nrow=N, ncol=k)
+  search = get_names(c(""), n_sib)
+  for (i in 1:k){
+    full_l[,(i)] = rowSums(select(liabilities, contains(search[i])))
+  }
+  
+  col_names=get_names(c("l"), n_sib)
+  colnames(full_l) = col_names
+
+  return(full_l)
+}
+
+
+
 ```
+
+
 
 ```{r}
-estimate_liabilities = function(data, K=0.05, n_sib=0, h2=0.5){
+estimate_liabilities = function(pheno, K=0.05, n_sib=0, h2=0.5){
   
-  k = 3+n_sib
-  
-  full_liabil = calc_phen(data, n_sib, K)
-  unique_comb = unique(full_liabil[,seq(2,k*2,2)])
+  unique_comb = unique(pheno)
   estimated_liabil = estimate_conf(unique_comb, h2, n_sib, K)
-  
   key = get_names(c("phen"),n_sib) 
-  temp = left_join(as_tibble(full_liabil),as_tibble(estimated_liabil),by=key)
-  order = get_names(c("l", "l_g", "l_e", "phen", 'est_l_g'), n_sib)
-  return(bind_cols(data,temp) %>% relocate(order))
-  
-  
+  full_data = left_join(as_tibble(pheno),as_tibble(estimated_liabil),by=key)
+  order = get_names(c("phen", 'est_l_g'), n_sib)
+  return(as_tibble(full_data) %>% relocate(order))
 }
 
 
 ```
 
+
+
+
+```{r}
+get_all_data = function(data, K=0.05, n_sib=0, h2=0.5){
+  full_liabil = calc_full_liabil(data, n_sib)
+  pheno = calc_phen(data, n_sib, K)
+  estimate_liabil = estimate_liabilities(pheno, K, n_sib, h2)
+  order = get_names(c('l', 'l_g', 'l_e', "phen", 'est_l_g'), n_sib)
+  full_data = bind_cols(as_tibble(full_liabil), estimate_liabil, data) %>% relocate(order)
+  
+  
+  return(full_data)
+}
+
+
+```
 
 
 ```{r}
@@ -245,7 +277,7 @@ G1 = snp_attach("test4.rds")
 
 fam = G1$fam
 
-k=estimate_liabilities(fam, n_sib=2)
+k=get_all_data(fam, n_sib=2)
 
 k
 ```
@@ -261,7 +293,7 @@ abline(a=0, b=1)
 
 control_plot = function(h2, phenos, col="black"){
   covmat = get_cov(h2)
-  estimates = Gibbs(covmat, phenos, all_est = TRUE, min_run = 8000)
+  estimates = LTFH(covmat, phenos, all_est = TRUE, min_run = 8000)
   sd = sd(estimates[,1])
   mean = mean(estimates[,1])
 
