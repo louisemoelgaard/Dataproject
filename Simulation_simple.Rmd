@@ -26,20 +26,28 @@ G_func = function(filename, MAF, N=1e5, M=1e5, block_size=1000){
                     code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
                     backingfile = filename)
   
-  
     
   iterations = M/block_size
-  for(i in 1:iterations){
+  lapply(1:iterations, function(i){
     current_start = (i-1) * block_size + 1
     current_end = current_start + block_size - 1
   
     probs = MAF[current_start:current_end]
   
     G[,current_start:current_end] = matrix(rbinom(block_size*N, 2, probs), ncol=block_size, nrow=N)
-  }
+  
+    }) %>% do.call('cbind', .)
   return(G)
 } 
 ```
+
+```{r}
+MAF = runif(1000, 0.01, 0.49)
+beta = beta_func(10, 0.5, 1000)
+G_func("test5", MAF, N=10, M=10, block_size = 10)
+```
+
+
 
 ```{r}
 # Make liabilities

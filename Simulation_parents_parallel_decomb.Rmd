@@ -68,12 +68,6 @@ assign_phen = function(G1, G2, N=1e5, block_size=1000){
 
 
 ```{r}
-sim_basic = function(i, beta, MAF, n_sib = 0, N=1e5, block_size=1000){
-  
-}
-
-
-
 
 
 sim_fam = function(i, beta, MAF, n_sib = 0, N=1e5, block_size=1000){
@@ -127,7 +121,7 @@ sim_fam = function(i, beta, MAF, n_sib = 0, N=1e5, block_size=1000){
 
 ```{r}
 # Make G
-G_func = function(filename, beta, MAF, fam = TRUE, n_sib = 0, N=1e5, M=1e5, block_size=1000){
+G_func_fam = function(filename, beta, MAF, fam = TRUE, n_sib = 0, N=1e5, M=1e5, block_size=1000){
   G = FBM.code256(nrow = N,
                     ncol = M,
                     code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
@@ -155,6 +149,32 @@ G_func = function(filename, beta, MAF, fam = TRUE, n_sib = 0, N=1e5, M=1e5, bloc
   return(list("G"=G, "liabil"=liabil))
   }
 ```
+
+
+```{r}
+# Make G
+G_func_simple = function(filename, MAF, N=1e5, M=1e5, block_size=1000){
+  G = FBM.code256(nrow = N,
+                    ncol = M,
+                    code = c(0L, 1L, 2L, rep(NA_integer_, 256 - 3)),
+                    backingfile = filename)
+  
+    
+  iterations = M/block_size
+  future_lapply(1:iterations, function(i){
+    current_start = (i-1) * block_size + 1
+    current_end = current_start + block_size - 1
+  
+    probs = MAF[current_start:current_end]
+  
+    G[,current_start:current_end] = matrix(rbinom(block_size*N, 2, probs), ncol=block_size, nrow=N)
+  
+    }, future.seed = TRUE) %>% do.call('cbind', .)
+  
+  return(G)
+} 
+```
+
 
 
 ```{r}
@@ -192,7 +212,7 @@ beta_func = function(C=1000, h_sq=0.5, M=1e5){
 
 ```{r}
 # Make liabilities
-liabilities_func = function(G, MAF, beta, n_sib = 0, N=1e5, h_sq=0.5, block_size = 1000){
+liabilities_func_fam = function(G, MAF, beta, n_sib = 0, N=1e5, h_sq=0.5, block_size = 1000){
   l_g_0 = rep(0, N)
   iterations = N/block_size
 
@@ -227,6 +247,31 @@ liabilities_func = function(G, MAF, beta, n_sib = 0, N=1e5, h_sq=0.5, block_size
 ```
 
 ```{r}
+liabilities_func_simple = function(G, MAF, beta, N=1e5, h_sq=0.5, block_size = 1000){
+  l_g = rep(0, N)
+  iterations = N/block_size
+
+  for (i in 1:iterations){
+    current_start = (i-1) * block_size + 1
+    current_end = current_start + block_size - 1
+    l_g[current_start:current_end] = c(sweep(sweep(G[current_start:current_end,], FUN = '-', STATS=2*MAF, MARGIN = 2), FUN='/',
+                                           STATS=sqrt(2*MAF*(1-MAF)), MARGIN = 2)  %*% beta)
+
+  }
+  
+  l_e = rnorm(N, 0, sqrt(1-h_sq))
+  
+  return(tibble(l_g, l_e))
+}
+```
+
+
+
+
+
+
+
+```{r}
 # Calculate who is sick
 y_func = function(l_e_0, l_g_0, K=0.05) {
   l_0 = l_g_0 + l_e_0
@@ -241,14 +286,19 @@ simulation = function (filename, h_sq=0.5, fam = TRUE, n_sib = 0, C=1000, K=0.05
   # Make MAF
   MAF = runif(M, 0.01, 0.49)
   beta = beta_func(C, h_sq, M)
-  G_l = G_func(filename, beta, MAF, fam = TRUE, n_sib, N, M, block_size)
-  G = G_l$G
-  liabil = G_l$liabil
-  l_g_e = liabilities_func(G, MAF, beta, n_sib, N, h_sq, block_size)
   
-  order = get_names(c("l_g","l_e"), n_sib) 
-   
-  out = bind_cols(liabil, l_g_e) %>% relocate(order)
+  if (fam = TRUE){
+    G_l = G_func_fam(filename, beta, MAF, fam, n_sib, N, M, block_size)
+    G = G_l$G
+    liabil = G_l$liabil
+    l_g_e = liabilities_func(G, MAF, beta, n_sib, N, h_sq, block_size)
+    order = get_names(c("l_g","l_e"), n_sib) 
+    out = bind_cols(liabil, l_g_e) %>% relocate(order)
+  }
+  else{
+    G = G_func_simple(filename, MAF, b, N, M, block_size)
+    out = liabilities_func_simple(G, MAF, beta, N, h_sq, block_size)
+  }
   
   
    obj.bigsnp = list(genotypes = G, # genotypes, FBM object
