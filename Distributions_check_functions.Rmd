@@ -11,7 +11,35 @@ library(dplyr)
 
 ```{r}
 G1 = snp_attach("test_sim2.rds")
-G2 = snp_attach("test4.rds")
+G2 = snp_attach("test.rds")
+```
+
+```{r}
+y_func = function(l_e_0, l_g_0, K=0.05) {
+  l_0 = l_g_0 + l_e_0
+  T_ = qnorm(1-K)
+  y = ifelse(l_0>=T_, 1, 0)
+  return(y)
+}
+```
+
+```{r}
+get_names <- function(values, n_sib=0, id= TRUE, parents=TRUE){
+  
+  len = length(values)
+  prefix = c(rep("", len*id), rep("p",len*2*parents), rep("s",n_sib*len))
+  
+  n_peop = 1*id + 2*parents + n_sib
+  index = c(rep(0,id), rep(c(1:2),parents), rep(c(3:(2+n_sib)),n_sib!=0))
+  
+  name = rep("", len*(n_peop))
+  j = 1
+  for (i in 1:n_peop){
+    name[j:(j+len-1)] = paste0((paste(values,prefix[j:(j+len-1)], sep="_")), rep(index[i], len))
+    j = j + len
+  }
+  return(name)
+}
 ```
 
 ```{r}
@@ -60,6 +88,41 @@ LT_FH_test = function(info){
 
 
 ```{r}
-LT_FH_test(G2)
+sim_test = function(info){
+l = list()
+c = 0
+for (i in G2$fam){
+  c = c + 1
+  if (c != 1){
+    if (c %% 2 == 0){
+      l[[c-(c/2)]] = i
+    }
+    else{
+      l[[c - ((c-1)/2)-1]] = l[[c - ((c-1)/2)-1]] + i
+    }
+  }
+}
+par(mfrow=c(1,length(l)))
+for (j in l){
+  qqnorm(j)
+}
+c = 0
+for (j in l){
+  out = c(mean(j), var(j))
+  names(out) = c(sprintf("mean_l%s", c), sprintf("variance_l%s", c))
+  print(out)
+  c = c + 1
+}
+}
 ```
+
+```{r}
+sim_test(G2)
+```
+```{r}
+k = list()
+k[[1]] = 2
+k
+```
+
 
