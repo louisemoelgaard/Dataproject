@@ -48,7 +48,8 @@ l
 ```
 
 ```{r}
-PRS_cross <- function(G,y01, cross_folds){
+PRS_cross <- function(data ,y01, cross_folds){
+G = data$genotypes
 folds = list()
 indexes <- rows_along(G)
 div = length(indexes)%/%cross_folds
@@ -103,9 +104,7 @@ out
 ```{r}
 dat = snp_attach("test.rds")
 g = dat$genotypes
-test = PRS_cross(G = g, y01 = estimate_liabilities(calc_phen(dat$fam), n_sib=2)$l_g_est_0, cross_folds = 3)
-
-#test
+test = PRS_cross(data = dat, y01 = estimate_liabilities(calc_phen(dat$fam, n_sib=2), n_sib=2)$l_g_est_0, cross_folds = 3)
 ```
 
 
