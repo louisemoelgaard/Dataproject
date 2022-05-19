@@ -1,0 +1,124 @@
+---
+title: "PRS"
+output: html_document
+date: '2022-05-17'
+---
+```{r}
+library(bigsnpr)
+library(dplyr)
+library(future.apply)
+library(tidyverse)
+```
+
+```{r}
+data = snp_attach("test.rds")
+y01 = estimate_liabilities(g, n_sib=2)$l_g_est_0
+k = 3 
+G = data$genotypes
+N = nrow(data$genotypes)
+ind.train <- sort(sample(N, N - N%/%k))
+ind.test <- setdiff(rows_along(G), ind.train)
+gwas.train <- big_univLinReg(G, y.train = y01[ind.train], ind.train = ind.train)
+summary(lpS.keep <- -predict(gwas.train))
+thrs <- seq(0, 4, by = 0.5)
+nb.pred <- sapply(thrs, function(thr) sum(lpS.keep > thr))
+prs <- snp_PRS(G, betas.keep = gwas.train$estim,
+              ind.test = ind.test,
+              lpS.keep = lpS.keep,
+              thr.list = thrs)
+```
+```{r}
+aucs <- apply(prs, 2, AUC, target = y_func(data$fam$l_g_0, data$fam$l_e_0)[ind.test])
+library(ggplot2)
+qplot(nb.pred, aucs) +
+geom_line() +
+scale_x_log10(breaks = nb.pred) +
+labs(x = "Number of predictors", y = "AUC") +
+theme_bigstatsr()
+```
+```{r}
+k = 0
+l = c(rep(0, 9))
+for (i in 1:9){
+  res <- summary(lm(y_func(data$fam$l_g_0, data$fam$l_e_0)[ind.test] ~ prs[,i]))$r.squared
+  l[i] = res
+}
+names(l) = c("0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4")
+l
+```
+
+```{r}
+PRS_cross <- function(G,y01, cross_folds){
+folds = list()
+indexes <- rows_along(G)
+div = length(indexes)%/%cross_folds
+for (i in 1:cross_folds){
+  folds[[i]] <- sort(sample(indexes, div))
+  indexes <- setdiff(indexes, folds[[i]])
+}
+out = list()
+p = 1
+name = c(rep(0, cross_folds))
+for (i in folds){
+  print(sprintf("fold %s", p))
+N = nrow(data$genotypes)
+ind.train <- i
+ind.test <- setdiff(rows_along(G), ind.train)
+gwas.train <- big_univLinReg(G, y.train = y01[ind.train], ind.train = ind.train)
+summary(lpS.keep <- -predict(gwas.train))
+thrs <- seq(0, 4, by = 0.5)
+nb.pred <- sapply(thrs, function(thr) sum(lpS.keep > thr))
+prs <- snp_PRS(G, betas.keep = gwas.train$estim,
+              ind.test = ind.test,
+              lpS.keep = lpS.keep,
+              thr.list = thrs)
+
+
+k = 0
+l = c(rep(0, 9))
+for (i in 1:9){
+  res <- summary(lm(y_func(data$fam$l_g_0, data$fam$l_e_0)[ind.test] ~ prs[,i]))$r.squared
+  l[i] = res
+}
+names(l) = c("0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4")
+print(l)
+
+aucs <- apply(prs, 2, AUC, target = y_func(data$fam$l_g_0, data$fam$l_e_0)[ind.test])
+library(ggplot2)
+print(qplot(nb.pred, aucs) +
+geom_line() +
+scale_x_log10(breaks = nb.pred) +
+labs(x = "Number of predictors", y = "AUC", title = sprintf("fold %s", p)) +
+theme_bigstatsr())
+out[[p]] = prs
+name[p] = sprintf("fold %s", p)
+p = p + 1
+}
+
+print(name)
+out
+}
+```
+
+```{r}
+dat = snp_attach("test.rds")
+g = dat$genotypes
+test = PRS_cross(G = g, y01 = estimate_liabilities(calc_phen(dat$fam), n_sib=2)$l_g_est_0, cross_folds = 3)
+
+#test
+```
+
+
+
+```{r}
+#Gør det kun ved vores sande kausale snips, POWER PLOT
+as_tibble(gwas.train) %>% 
+  mutate(p_val = predict(gwas.train, log10 = FALSE), causal = (p_val < 0.005) + 0) %>% 
+  arrange(abs(estim)) %>% 
+  mutate(power = cumsum(causal)/100) %>% 
+  ggplot(aes(x = estim, y = power)) + geom_line()
+  
+```
+
+
+
